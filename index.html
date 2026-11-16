@@ -2,725 +2,512 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Architecture of Modern Recommender Systems — Netflix Case Study</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Recommender Systems Architecture — PPT Presentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     /* -------------------------------------------------------------
-       STRICT MONOCHROME DESIGN SYSTEM: PURE BLACK & WHITE ONLY
-       NO COLOR ACCENTS, NO VIBECODED PASTELS OR NEONS
+       STRICT MONOCHROME PRESENTATION SYSTEM (PPT / KEYNOTE STYLE)
+       ONLY PURE BLACK, PURE WHITE, AND TECHNICAL GRAYS.
     -------------------------------------------------------------- */
     :root {
-      --bg-primary: #000000;
-      --bg-secondary: #0a0a0a;
-      --bg-tertiary: #141414;
-      --bg-card: #0f0f0f;
-      --bg-hover: #1f1f1f;
-      --border-subtle: #222222;
-      --border-medium: #383838;
-      --border-strong: #ffffff;
+      --bg: #000000;
+      --bg-panel: #0d0d0d;
+      --bg-card: #141414;
+      --bg-hover: #222222;
+      --border: #262626;
+      --border-bright: #525252;
       
-      --text-primary: #ffffff;
-      --text-secondary: #a3a3a3;
-      --text-muted: #666666;
-      --text-inverse: #000000;
+      --text: #ffffff;
+      --text-dim: #999999;
+      --text-muted: #555555;
+      --text-inv: #000000;
       
-      --accent-solid: #ffffff;
-      --accent-dim: #737373;
-      
+      --accent: #ffffff;
+      --accent-inv: #000000;
+
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+      --font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
       
-      --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-      --transition-medium: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      --slide-ratio: 16 / 9;
+      --transition-slide: 0.45s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
     [data-theme="light"] {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f7f7f7;
-      --bg-tertiary: #ebebeb;
-      --bg-card: #f9f9f9;
-      --bg-hover: #ededed;
-      --border-subtle: #e0e0e0;
-      --border-medium: #bcbcbc;
-      --border-strong: #000000;
+      --bg: #ffffff;
+      --bg-panel: #f5f5f5;
+      --bg-card: #ebebeb;
+      --bg-hover: #e0e0e0;
+      --border: #d4d4d4;
+      --border-bright: #888888;
       
-      --text-primary: #000000;
-      --text-secondary: #525252;
-      --text-muted: #8f8f8f;
-      --text-inverse: #ffffff;
+      --text: #000000;
+      --text-dim: #555555;
+      --text-muted: #999999;
+      --text-inv: #ffffff;
       
-      --accent-solid: #000000;
-      --accent-dim: #888888;
+      --accent: #000000;
+      --accent-inv: #ffffff;
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      user-select: none;
+    }
+
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
       -webkit-font-smoothing: antialiased;
     }
 
-    html {
-      scroll-behavior: smooth;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      font-family: var(--font-sans);
-    }
-
-    body {
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      line-height: 1.6;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* Ambient Dot Grid (Monochrome) */
-    .ambient-grid {
+    /* Ambient Matrix Grid */
+    .bg-grid {
       position: fixed;
       inset: 0;
-      background-image: radial-gradient(var(--border-subtle) 1px, transparent 1px);
-      background-size: 32px 32px;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 28px 28px;
       opacity: 0.45;
       pointer-events: none;
       z-index: 0;
     }
 
-    /* Navigation Bar */
-    header.site-header {
-      position: sticky;
+    /* Presentation Header Toolbar */
+    .ppt-header {
+      position: fixed;
       top: 0;
-      z-index: 100;
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      background: rgba(0, 0, 0, 0.78);
-      border-bottom: 1px solid var(--border-subtle);
-      transition: background var(--transition-fast), border-color var(--transition-fast);
-    }
-
-    [data-theme="light"] header.site-header {
-      background: rgba(255, 255, 255, 0.88);
-    }
-
-    .header-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 14px 28px;
+      left: 0;
+      right: 0;
+      height: 52px;
+      padding: 0 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      letter-spacing: 0.5px;
-      text-decoration: none;
-      color: var(--text-primary);
-      font-weight: 600;
+    [data-theme="light"] .ppt-header {
+      background: rgba(255, 255, 255, 0.88);
     }
 
-    .brand-mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px;
-      height: 24px;
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      font-weight: 900;
-      font-size: 0.75rem;
-      border-radius: 4px;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      list-style: none;
-    }
-
-    .nav-links a {
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-family: var(--font-mono);
-      transition: color var(--transition-fast);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .nav-links a:hover {
-      color: var(--text-primary);
-    }
-
-    .header-controls {
+    .ppt-brand {
       display: flex;
       align-items: center;
       gap: 10px;
-    }
-
-    .btn-mono {
-      background: transparent;
-      color: var(--text-primary);
-      border: 1px solid var(--border-medium);
-      padding: 6px 14px;
       font-family: var(--font-mono);
       font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .ppt-brand-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: var(--text);
+      color: var(--text-inv);
+      font-weight: 900;
+      font-size: 0.75rem;
+      border-radius: 3px;
+    }
+
+    .ppt-deck-title {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .ppt-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-ppt {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 5px 12px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      border-radius: 4px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border-radius: 4px;
-      transition: all var(--transition-fast);
+      transition: all 0.2s ease;
     }
 
-    .btn-mono:hover {
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      border-color: var(--text-primary);
+    .btn-ppt:hover {
+      background: var(--text);
+      color: var(--text-inv);
+      border-color: var(--text);
     }
 
-    .btn-mono.active {
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      border-color: var(--text-primary);
+    .btn-ppt.active {
+      background: var(--text);
+      color: var(--text-inv);
+      border-color: var(--text);
     }
 
-    /* Layout Container */
-    main.content-wrapper {
-      position: relative;
-      z-index: 1;
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 40px 28px 120px 28px;
-    }
-
-    /* Presentation Deck Mode vs Long-form Whitepaper */
-    .deck-container {
-      display: none;
-    }
-    body.deck-mode .deck-container {
-      display: block;
-    }
-    body.deck-mode .doc-container {
-      display: none;
-    }
-
-    /* Hero Section */
-    .hero-section {
-      padding: 70px 0 60px 0;
-      border-bottom: 1px solid var(--border-subtle);
-      position: relative;
-    }
-
-    .eyebrow {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      letter-spacing: 2.5px;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .eyebrow::before {
-      content: "";
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: var(--text-primary);
-      border-radius: 1px;
-    }
-
-    h1.hero-title {
-      font-size: clamp(2.4rem, 5.5vw, 4.4rem);
-      font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: -2px;
-      margin-bottom: 24px;
-      max-width: 1040px;
-    }
-
-    p.hero-desc {
-      font-size: clamp(1.05rem, 1.8vw, 1.35rem);
-      color: var(--text-secondary);
-      max-width: 820px;
-      line-height: 1.5;
-      font-weight: 400;
-      margin-bottom: 36px;
-    }
-
-    .hero-stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-top: 40px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      padding: 20px 24px;
-      border-radius: 6px;
-      transition: border-color var(--transition-fast), transform var(--transition-fast);
-    }
-
-    .stat-card:hover {
-      border-color: var(--border-medium);
-      transform: translateY(-2px);
-    }
-
-    .stat-metric {
-      font-family: var(--font-mono);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      margin-bottom: 4px;
-    }
-
-    .stat-label {
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      font-family: var(--font-mono);
-    }
-
-    /* Section Headers */
-    .section-block {
-      padding: 70px 0;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .section-header-row {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 36px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .section-num {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      margin-bottom: 8px;
-    }
-
-    .section-heading {
-      font-size: clamp(1.8rem, 3.2vw, 2.6rem);
-      font-weight: 800;
-      letter-spacing: -1px;
-      line-height: 1.15;
-    }
-
-    .section-subtitle {
-      color: var(--text-secondary);
-      font-size: 1.05rem;
-      max-width: 720px;
-      margin-top: 8px;
-    }
-
-    /* Interactive Funnel Architecture */
-    .funnel-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 32px;
-      margin-top: 24px;
-    }
-
-    .funnel-tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 28px;
-      flex-wrap: wrap;
-    }
-
-    .funnel-step-btn {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      padding: 10px 18px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .funnel-step-btn:hover {
-      border-color: var(--border-medium);
-      color: var(--text-primary);
-    }
-
-    .funnel-step-btn.active {
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      border-color: var(--text-primary);
-      font-weight: 600;
-    }
-
-    .funnel-visualizer {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr;
-      gap: 32px;
-      align-items: center;
-    }
-
-    @media (max-width: 900px) {
-      .funnel-visualizer {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    /* SVG Funnel graphic in strict B&W */
-    .funnel-svg-wrapper {
-      width: 100%;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 24px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .funnel-svg-wrapper svg {
-      width: 100%;
-      max-width: 480px;
-      height: auto;
-    }
-
-    .funnel-stage-polygon {
-      transition: fill 0.3s ease, stroke 0.3s ease, transform 0.3s ease;
-      cursor: pointer;
-    }
-
-    .funnel-details-panel {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 24px 28px;
-    }
-
-    .funnel-badge {
-      display: inline-block;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      background: var(--border-subtle);
-      color: var(--text-primary);
-      padding: 4px 10px;
-      border-radius: 3px;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .funnel-stage-title {
-      font-size: 1.5rem;
-      font-weight: 800;
-      margin-bottom: 10px;
-      letter-spacing: -0.5px;
-    }
-
-    .funnel-specs-table {
-      width: 100%;
-      margin: 20px 0;
-      border-collapse: collapse;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-    }
-
-    .funnel-specs-table tr {
-      border-bottom: 1px solid var(--border-subtle);
-    }
-
-    .funnel-specs-table td {
-      padding: 10px 0;
-    }
-
-    .funnel-specs-table td:first-child {
-      color: var(--text-muted);
-      width: 45%;
-    }
-
-    .funnel-specs-table td:last-child {
-      color: var(--text-primary);
-      font-weight: 600;
-      text-align: right;
-    }
-
-    /* Architecture Grid */
-    .grid-2col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin-top: 24px;
-    }
-
-    @media (max-width: 860px) {
-      .grid-2col {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .card-mono {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 28px;
-      position: relative;
-      transition: border-color var(--transition-fast);
-    }
-
-    .card-mono:hover {
-      border-color: var(--border-medium);
-    }
-
-    .card-tag {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      margin-bottom: 12px;
-      display: block;
-    }
-
-    .card-title {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 12px;
-      letter-spacing: -0.3px;
-    }
-
-    .card-text {
-      color: var(--text-secondary);
-      font-size: 0.95rem;
-      line-height: 1.6;
-    }
-
-    /* Math Box Monochromatic */
-    .math-box {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-left: 3px solid var(--text-primary);
-      padding: 16px 20px;
-      margin: 16px 0;
-      font-family: var(--font-mono);
-      font-size: 0.9rem;
-      color: var(--text-primary);
-      overflow-x: auto;
-    }
-
-    /* Interactive Matrix Factorization Simulator */
-    .interactive-matrix-box {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      padding: 30px;
-      margin-top: 24px;
-    }
-
-    .matrix-flex {
+    /* Main Presentation Stage */
+    .ppt-stage {
+      position: absolute;
+      top: 52px;
+      bottom: 46px;
+      left: 0;
+      right: 0;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin: 24px 0;
-      font-family: var(--font-mono);
+      padding: 16px;
+      z-index: 10;
     }
 
-    .matrix-entity {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      padding: 14px 20px;
-      border-radius: 6px;
-      text-align: center;
-    }
-
-    .matrix-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    .vector-values {
-      font-size: 0.9rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-    }
-
-    .matrix-op {
-      font-size: 1.5rem;
-      color: var(--text-muted);
-    }
-
-    .matrix-result {
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      padding: 14px 24px;
-      border-radius: 6px;
-      font-weight: 800;
-      font-size: 1.1rem;
-    }
-
-    .vector-slider-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-top: 20px;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-    }
-
-    .slider-group label {
-      display: block;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-    }
-
-    .slider-group input[type="range"] {
+    /* 16:9 Slide Canvas */
+    .slide-canvas {
       width: 100%;
-      accent-color: var(--text-primary);
-      background: var(--border-subtle);
-    }
-
-    /* NETFLIX CASE STUDY SPECIAL SECTION */
-    .netflix-case-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
+      max-width: 1360px;
+      height: 100%;
+      max-height: 765px;
+      aspect-ratio: 16 / 9;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
       border-radius: 8px;
+      position: relative;
       overflow: hidden;
-      margin-top: 32px;
-    }
-
-    .netflix-banner {
-      background: #000000;
-      border-bottom: 1px solid var(--border-medium);
-      padding: 24px 32px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
+      flex-direction: column;
     }
 
-    [data-theme="light"] .netflix-banner {
-      background: #f0f0f0;
-      border-bottom: 1px solid var(--border-medium);
+    /* Slide Inner Container & Transition */
+    .slide-viewport {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
     }
 
-    .netflix-badge {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 1.5px;
-      border: 1px solid var(--border-medium);
-      padding: 4px 10px;
-      border-radius: 2px;
-      text-transform: uppercase;
-    }
-
-    .netflix-inner-body {
-      padding: 32px;
-    }
-
-    /* Interactive Persona Switcher for Dynamic Artwork */
-    .artwork-bandit-demo {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 28px;
-      margin-top: 28px;
-    }
-
-    .persona-selector {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
-
-    .persona-btn {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-subtle);
-      color: var(--text-secondary);
-      padding: 10px 18px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all var(--transition-fast);
-    }
-
-    .persona-btn:hover {
-      border-color: var(--border-medium);
-      color: var(--text-primary);
-    }
-
-    .persona-btn.active {
-      background: var(--text-primary);
-      color: var(--text-inverse);
-      border-color: var(--text-primary);
-      font-weight: 700;
-    }
-
-    .artwork-preview-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.3fr;
-      gap: 28px;
-      align-items: center;
-    }
-
-    @media (max-width: 860px) {
-      .artwork-preview-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .dynamic-title-card {
-      background: #000000;
-      border: 2px solid var(--text-primary);
-      border-radius: 6px;
-      aspect-ratio: 16/9;
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 40px 48px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(40px) scale(0.98);
+      transition: opacity var(--transition-slide), transform var(--transition-slide);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0) scale(1);
+      z-index: 5;
+    }
+
+    .slide.prev-slide {
+      transform: translateX(-40px) scale(0.98);
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .slide-meta-tag {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .slide-meta-tag::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      background: var(--text);
+      display: inline-block;
+      border-radius: 1px;
+    }
+
+    .slide-title {
+      font-size: clamp(1.8rem, 2.8vw, 2.6rem);
+      font-weight: 900;
+      letter-spacing: -1.2px;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .slide-subtitle {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+      max-width: 820px;
+      line-height: 1.4;
+    }
+
+    .slide-chip {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 4px;
+      color: var(--text-dim);
+      background: var(--bg-card);
+      white-space: nowrap;
+    }
+
+    /* Slide Content Layouts */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 0;
+    }
+
+    .split-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      align-items: center;
+      height: 100%;
+    }
+
+    .split-3col {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    /* Monochrome Card Box */
+    .card-mono {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 22px 26px;
+      position: relative;
+    }
+
+    .card-mono-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-mono-desc {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    /* Mathematical Box with Animated Highlights */
+    .formula-display {
+      background: #000000;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--text);
+      padding: 16px 20px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      margin: 14px 0;
+      color: #ffffff;
+      overflow-x: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    [data-theme="light"] .formula-display {
+      background: #f0f0f0;
+      color: #000000;
+    }
+
+    .math-term {
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .math-term:hover, .math-term.highlight {
+      background: #ffffff;
+      color: #000000;
+      box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
+    }
+
+    [data-theme="light"] .math-term:hover, [data-theme="light"] .math-term.highlight {
+      background: #000000;
+      color: #ffffff;
+    }
+
+    /* Interactive Matrix Factorization Animation Grid */
+    .matrix-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 10px;
+      font-family: var(--font-mono);
+    }
+
+    .matrix-box {
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 4px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .matrix-grid {
+      display: grid;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .m-cell {
+      width: 44px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      background: var(--bg-panel);
+      transition: all 0.3s ease;
+    }
+
+    .m-cell.active-row {
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+      font-weight: 700;
+    }
+
+    .m-cell.active-col {
+      background: #ffffff;
+      color: #000000;
+      border-color: #ffffff;
+      font-weight: 700;
+    }
+
+    .m-cell.target-cell {
+      background: #ffffff;
+      color: #000000;
+      border: 2px solid #ffffff;
+      font-weight: 900;
+      transform: scale(1.15);
+      z-index: 10;
+    }
+
+    /* Two-Tower Interactive Vector Radar */
+    .tower-diagram {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .tower-box {
+      flex: 1;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      border-radius: 6px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .tower-layer {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 8px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      margin-top: 6px;
+      transition: all 0.3s ease;
+    }
+
+    .tower-layer.pulse {
+      background: #ffffff;
+      color: #000000;
+      font-weight: 700;
+    }
+
+    /* Funnel Stage Canvas Animation */
+    .funnel-canvas-wrapper {
+      position: relative;
+      width: 100%;
+      height: 340px;
+      border: 1px solid var(--border);
+      background: #000000;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    canvas#funnelCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* LinUCB Artwork Bandit Interactive Stage */
+    .bandit-container {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .artwork-art-box {
+      aspect-ratio: 16 / 9;
+      background: #000000;
+      border: 2px solid var(--text);
+      border-radius: 6px;
       position: relative;
       overflow: hidden;
-      color: #ffffff;
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
-    .card-art-overlay {
-      position: absolute;
-      inset: 0;
-      opacity: 0.15;
-      background-size: cover;
-      background-position: center;
-      transition: all 0.4s ease;
-      filter: grayscale(100%) contrast(150%);
-    }
-
-    .card-art-svg {
+    .art-svg-bg {
       position: absolute;
       inset: 0;
       width: 100%;
@@ -728,1183 +515,1345 @@
       pointer-events: none;
     }
 
-    .card-watermark {
-      position: relative;
-      z-index: 2;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      letter-spacing: 2px;
-      opacity: 0.7;
-    }
-
-    .card-movie-info {
-      position: relative;
-      z-index: 2;
-    }
-
-    .card-movie-title {
-      font-size: 1.8rem;
-      font-weight: 900;
-      letter-spacing: -1px;
-      line-height: 1;
-      margin-bottom: 6px;
-    }
-
-    .card-variant-label {
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      opacity: 0.85;
-      letter-spacing: 0.5px;
-    }
-
-    .bandit-telemetry {
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-    }
-
-    .bandit-metric-bar {
-      margin-top: 14px;
-    }
-
-    .bar-label-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      color: var(--text-secondary);
-      font-size: 0.8rem;
-    }
-
-    .bar-track {
-      width: 100%;
-      height: 6px;
-      background: var(--border-subtle);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: var(--text-primary);
-      transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    /* 2D Row-Page Matrix Visualizer */
-    .row-matrix-demo {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      margin-top: 24px;
-    }
-
-    .netflix-row {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-subtle);
-      border-radius: 6px;
-      padding: 16px 20px;
-    }
-
-    .row-header-mono {
+    /* Bottom PPT Footer Bar */
+    .ppt-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 46px;
+      padding: 0 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 12px;
+      border-top: 1px solid var(--border);
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
       font-family: var(--font-mono);
-      font-size: 0.85rem;
+      font-size: 0.8rem;
     }
 
-    .row-title-mono {
-      font-weight: 700;
-      color: var(--text-primary);
-      letter-spacing: 0.5px;
+    [data-theme="light"] .ppt-footer {
+      background: rgba(255, 255, 255, 0.88);
     }
 
-    .row-meta-badge {
-      color: var(--text-muted);
-      font-size: 0.75rem;
+    .slide-progress-bar {
+      position: absolute;
+      top: -1px;
+      left: 0;
+      height: 2px;
+      background: var(--text);
+      transition: width 0.3s ease;
     }
 
-    .row-items-strip {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
-    }
-
-    @media (max-width: 768px) {
-      .row-items-strip {
-        grid-template-columns: repeat(3, 1fr);
-      }
-    }
-
-    .strip-item {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-subtle);
-      aspect-ratio: 16/9;
+    .nav-arrow-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 32px;
+      height: 30px;
       border-radius: 4px;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      padding: 8px;
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      transition: all var(--transition-fast);
-      cursor: pointer;
-    }
-
-    .strip-item:hover {
-      border-color: var(--text-primary);
-      background: var(--bg-hover);
-      transform: scale(1.03);
-    }
-
-    .strip-item-title {
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text-primary);
-    }
-
-    .strip-item-score {
-      color: var(--text-muted);
-      font-size: 0.65rem;
-    }
-
-    /* Presentation Slide Deck View (Full Screen Slides) */
-    .deck-container {
-      min-height: 80vh;
-      display: none;
-      flex-direction: column;
+      display: inline-flex;
+      align-items: center;
       justify-content: center;
-    }
-
-    .slide-wrapper {
-      background: var(--bg-card);
-      border: 1px solid var(--border-medium);
-      border-radius: 8px;
-      padding: 50px;
-      min-height: 600px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-    }
-
-    @media (max-width: 768px) {
-      .slide-wrapper {
-        padding: 24px;
-      }
-    }
-
-    .slide-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      cursor: pointer;
       font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border-subtle);
-      padding-bottom: 14px;
-      margin-bottom: 30px;
+      transition: all 0.2s ease;
     }
 
-    .slide-body {
-      flex: 1;
+    .nav-arrow-btn:hover {
+      background: var(--text);
+      color: var(--text-inv);
+      border-color: var(--text);
     }
 
-    .slide-title {
-      font-size: clamp(2rem, 4vw, 3rem);
-      font-weight: 900;
-      letter-spacing: -1.5px;
-      line-height: 1.1;
-      margin-bottom: 20px;
+    .nav-arrow-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
     }
 
-    .slide-content-grid {
+    /* Grid Slide Overview Overlay (Key G) */
+    .grid-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.94);
+      backdrop-filter: blur(20px);
+      z-index: 200;
+      display: none;
+      padding: 60px 40px;
+      overflow-y: auto;
+    }
+
+    .grid-overlay.active {
+      display: block;
+    }
+
+    .overview-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 32px;
-      margin-top: 24px;
-    }
-
-    @media (max-width: 800px) {
-      .slide-content-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .deck-controls {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 24px;
-      font-family: var(--font-mono);
-      font-size: 0.85rem;
-    }
-
-    /* Footers */
-    footer.site-footer {
-      border-top: 1px solid var(--border-subtle);
-      padding: 50px 28px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
       max-width: 1280px;
       margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 20px;
+    }
+
+    .grid-thumb {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .grid-thumb:hover, .grid-thumb.active {
+      border-color: var(--text);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
+    }
+
+    .grid-thumb-num {
       font-family: var(--font-mono);
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 6px;
     }
 
-    .footer-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
+    .grid-thumb-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.3;
     }
 
-    /* Keybinding hint */
-    .kbd-hint {
+    /* Keyboard shortcut helper pill */
+    .kbd {
       display: inline-block;
-      padding: 2px 6px;
-      font-size: 0.7rem;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border-subtle);
+      padding: 2px 5px;
+      border: 1px solid var(--border);
       border-radius: 3px;
-      color: var(--text-secondary);
-      margin-left: 4px;
+      font-size: 0.7rem;
+      background: var(--bg-card);
+      color: var(--text-dim);
+      margin: 0 2px;
     }
   </style>
 </head>
 <body data-theme="dark">
 
-  <div class="ambient-grid"></div>
+  <div class="bg-grid"></div>
 
-  <!-- Header Navigation -->
-  <header class="site-header">
-    <div class="header-inner">
-      <a href="#" class="brand">
-        <span class="brand-mark">R</span>
-        <span>RECSYS.SYS // CASE STUDY</span>
-      </a>
+  <!-- PPT Header -->
+  <header class="ppt-header">
+    <div class="ppt-brand">
+      <span class="ppt-brand-badge">R</span>
+      <span>RECSYS.SYS // PRODUCTION SLIDE DECK</span>
+    </div>
 
-      <nav>
-        <ul class="nav-links">
-          <li><a href="#architecture">Architecture</a></li>
-          <li><a href="#paradigms">Math & Models</a></li>
-          <li><a href="#netflix-walkthrough">Netflix Deep Dive</a></li>
-          <li><a href="#evaluation">Metrics</a></li>
-        </ul>
-      </nav>
+    <div class="ppt-deck-title" id="deckHeaderTitle">
+      SLIDE 01 // ARCHITECTURAL BLUEPRINT
+    </div>
 
-      <div class="header-controls">
-        <button class="btn-mono" id="toggleViewBtn" title="Switch between presentation deck and comprehensive document">
-          <span id="viewModeText">Deck View</span>
-          <span class="kbd-hint">D</span>
-        </button>
+    <div class="ppt-controls">
+      <button class="btn-ppt" id="btnOverview" title="Slide Overview (G)">
+        <span>Overview</span>
+        <span class="kbd">G</span>
+      </button>
 
-        <button class="btn-mono" id="themeToggleBtn" title="Toggle between Dark and Light Monochrome">
-          <span id="themeText">Light</span>
-          <span class="kbd-hint">T</span>
-        </button>
-      </div>
+      <button class="btn-ppt" id="btnAutoPlay" title="Auto Advance Slides (P)">
+        <span id="autoPlayIcon">&blacktriangleright;</span>
+        <span id="autoPlayText">Auto</span>
+        <span class="kbd">P</span>
+      </button>
+
+      <button class="btn-ppt" id="btnThemeToggle" title="Toggle Theme (T)">
+        <span id="themeLabel">Light</span>
+        <span class="kbd">T</span>
+      </button>
+
+      <button class="btn-ppt" id="btnFullscreen" title="Fullscreen (F)">
+        <span>FS</span>
+        <span class="kbd">F</span>
+      </button>
     </div>
   </header>
 
-  <!-- Main Content Wrapper -->
-  <main class="content-wrapper">
+  <!-- PPT Stage & Canvas (16:9) -->
+  <main class="ppt-stage">
+    <div class="slide-canvas">
+      <div class="slide-viewport">
 
-    <!-- ==========================================
-         VIEW 1: COMPREHENSIVE DOCUMENT VIEW
-         ========================================== -->
-    <div class="doc-container" id="docView">
+        <!-- ==============================================
+             SLIDE 01: TITLE & EXECUTIVE AGENDA
+             ============================================== -->
+        <div class="slide active" id="slide-0">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">TECHNICAL BRIEFING // RECSYS 2026</div>
+              <h1 class="slide-title">Architecture of Modern Recommender Systems</h1>
+              <p class="slide-subtitle">
+                Mathematical Formulations, Two-Tower Dual Encoders, Multi-Armed Bandits &amp; The Netflix Production Walkthrough
+              </p>
+            </div>
+            <div class="slide-chip">P99 BUDGET: &le; 15ms</div>
+          </div>
 
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <div class="eyebrow">Production Engineering Whitepaper & Case Study</div>
-        <h1 class="hero-title">Architecture of Modern Recommender Systems</h1>
-        <p class="hero-desc">
-          How modern machine learning systems filter catalogs of 100M+ candidate items down to 10 sub-millisecond personalized recommendations. Includes mathematical formulations, candidate retrieval funnels, and a production case study of Netflix's multi-armed bandit artwork personalization and 2D page generation.
-        </p>
+          <div class="slide-body">
+            <div class="split-3col" style="margin-top: 10px;">
+              <div class="card-mono">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 01</div>
+                <div class="card-mono-title">The Retrieval Funnel</div>
+                <p class="card-mono-desc">
+                  How 10,000,000 items are pruned to 10 candidates in &le;15ms through 4 cascading computational stages.
+                </p>
+                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+                  &bull; MIPS &amp; Approximate NN<br>
+                  &bull; Two-Tower DNN Encoders<br>
+                  &bull; ScaNN &amp; HNSW Graphs
+                </div>
+              </div>
 
-        <div class="hero-stats-grid">
-          <div class="stat-card">
-            <div class="stat-metric">10M &rarr; 10</div>
-            <div class="stat-label">Candidate Funnel Ratio</div>
+              <div class="card-mono">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 02</div>
+                <div class="card-mono-title">Mathematical Rigor</div>
+                <p class="card-mono-desc">
+                  Interactive step-through matrix factorization, vector dot products, and counterfactual IPS bias debiasing.
+                </p>
+                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+                  &bull; SVD &amp; ALS Factorization<br>
+                  &bull; Cosine Latent Projections<br>
+                  &bull; Inverse Propensity Scoring
+                </div>
+              </div>
+
+              <div class="card-mono">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 03</div>
+                <div class="card-mono-title">The Netflix Case Study</div>
+                <p class="card-mono-desc">
+                  2D page grid generation and dynamic thumbnail artwork personalization using LinUCB contextual bandits.
+                </p>
+                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+                  &bull; 2D Slate Optimization<br>
+                  &bull; Dynamic LinUCB Math<br>
+                  &bull; Live Persona Arm Selection
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat-card">
-            <div class="stat-metric">&lt; 15ms</div>
-            <div class="stat-label">P99 Serving Latency</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-metric">80%+</div>
-            <div class="stat-label">Hours Driven by RecSys (Netflix)</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-metric">2-Tier</div>
-            <div class="stat-label">Two-Tower &amp; MIPS Indexing</div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+            <span>PRESS <span class="kbd">&rarr;</span> OR <span class="kbd">SPACE</span> TO ADVANCE</span>
+            <span>PRESENTER MODE ACTIVE</span>
           </div>
         </div>
-      </section>
 
-      <!-- Section 1: The Funnel Architecture -->
-      <section class="section-block" id="architecture">
-        <div class="section-num">// SECTION 01</div>
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-heading">The Multi-Stage Retrieval Funnel</h2>
-            <p class="section-subtitle">
-              Evaluating complex deep neural networks over millions of items is computationally intractable at inference time. Production systems split the task into distinct, cascading stages of decreasing candidate volume and increasing model complexity.
-            </p>
+        <!-- ==============================================
+             SLIDE 02: THE FORMAL MATHEMATICAL OBJECTIVE
+             ============================================== -->
+        <div class="slide" id="slide-1">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 01 &mdash; PROBLEM FORMULATION</div>
+              <h2 class="slide-title">The Formal Optimization Problem</h2>
+              <p class="slide-subtitle">
+                Balancing catalog utility against strict inference latency and presentation redundancy.
+              </p>
+            </div>
+            <div class="slide-chip">OBJECTIVE FUNCTION</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="split-2col">
+              <div>
+                <p class="card-mono-desc" style="font-size: 0.95rem; margin-bottom: 12px;">
+                  Given user <em>u &isin; U</em>, catalog <em>I</em> (|I| &gt; 10<sup>7</sup>), and real-time context vector <em>x<sub>u,c</sub></em>:
+                </p>
+
+                <div class="formula-display">
+                  S<sup>*</sup> = argmax<sub>|S|=K</sub> &sum;<sub>i &isin; S</sub> U(u, i, c) &minus; &lambda; &Omega;(S)
+                </div>
+
+                <div class="card-mono" style="margin-top: 16px;">
+                  <div class="card-mono-title">Interactive Mathematical Components</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 2;">
+                    <div>&bull; <span class="math-term highlight">U(u, i, c)</span>: Expected utility (Watch Probability &times; Expected Stream Duration)</div>
+                    <div>&bull; <span class="math-term">&Omega;(S)</span>: Redundancy penalty (e.g. pairwise genre/actor similarity inside slate <em>S</em>)</div>
+                    <div>&bull; <span class="math-term">&lambda;</span>: Exploration / Diversity trade-off hyperparameter</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card-mono">
+                <div class="card-mono-title">The 15ms Latency Budget</div>
+                <p class="card-mono-desc">
+                  An exhaustive forward pass of a 100M parameter model across 10M titles takes ~4,500ms. Production architectures enforce a strict sub-15ms deadline:
+                </p>
+
+                <!-- Animated Latency Breakdown Bar -->
+                <div style="margin-top: 24px; font-family: var(--font-mono); font-size: 0.75rem;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>1. Gateway &amp; Auth (2ms)</span>
+                    <span>13%</span>
+                  </div>
+                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
+                    <div style="width: 13%; height: 100%; background: var(--text);"></div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>2. Candidate Retrieval MIPS (4ms)</span>
+                    <span>27%</span>
+                  </div>
+                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
+                    <div style="width: 27%; height: 100%; background: var(--text);"></div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>3. Deep Neural Reranker (7ms)</span>
+                    <span>47%</span>
+                  </div>
+                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
+                    <div style="width: 47%; height: 100%; background: var(--text);"></div>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span>4. Bandit Artwork &amp; Dedup (2ms)</span>
+                    <span>13%</span>
+                  </div>
+                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: 13%; height: 100%; background: var(--text);"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 02 // RECSYS FORMULATION</span>
+            <span>NEXT: MATRIX FACTORIZATION MATH &rarr;</span>
           </div>
         </div>
 
-        <!-- Interactive Funnel Component -->
-        <div class="funnel-container">
-          <div class="funnel-tabs">
-            <button class="funnel-step-btn active" data-stage="0">1. Candidate Retrieval (10M &rarr; 1K)</button>
-            <button class="funnel-step-btn" data-stage="1">2. First-Stage Scoring (1K &rarr; 200)</button>
-            <button class="funnel-step-btn" data-stage="2">3. Heavy Reranking (200 &rarr; 50)</button>
-            <button class="funnel-step-btn" data-stage="3">4. Slate &amp; Diversity (50 &rarr; 10)</button>
+        <!-- ==============================================
+             SLIDE 03: ANIMATED MATRIX FACTORIZATION MATH
+             ============================================== -->
+        <div class="slide" id="slide-2">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 02 &mdash; MATHEMATICAL FOUNDATIONS</div>
+              <h2 class="slide-title">Matrix Factorization (SVD / ALS)</h2>
+              <p class="slide-subtitle">
+                Decomposing the sparse rating matrix <em>R</em> into dense latent user factors <em>P</em> and item factors <em>Q</em>.
+              </p>
+            </div>
+            <div class="slide-chip">STEP-BY-STEP CALCULATION</div>
           </div>
 
-          <div class="funnel-visualizer">
-            <div class="funnel-svg-wrapper">
-              <svg viewBox="0 0 400 320" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- Funnel Stage 1 -->
-                <polygon id="svgStage0" class="funnel-stage-polygon" points="20,20 380,20 320,90 80,90" fill="#ffffff" stroke="#ffffff" stroke-width="2" />
-                <text x="200" y="60" text-anchor="middle" fill="#000000" font-family="'Geist Mono', monospace" font-size="12" font-weight="700">RETRIEVAL: 10,000,000 ITEMS</text>
+          <div class="slide-body">
+            <div class="split-2col">
+              <div>
+                <div class="formula-display">
+                  &rcirc;<sub>ui</sub> = &mu; + b<sub>u</sub> + b<sub>i</sub> + &sum;<sub>f=1..k</sub> p<sub>uf</sub> &times; q<sub>fi</sub>
+                </div>
 
-                <!-- Funnel Stage 2 -->
-                <polygon id="svgStage1" class="funnel-stage-polygon" points="80,96 320,96 270,165 130,165" fill="#333333" stroke="#ffffff" stroke-width="1.5" />
-                <text x="200" y="135" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="12" font-weight="700">SCORING: 1,000 CANDIDATES</text>
+                <div class="card-mono">
+                  <div class="card-mono-title">Loss Function Minimization</div>
+                  <div class="formula-display" style="font-size: 0.85rem; padding: 10px;">
+                    L = &sum; (r<sub>ui</sub> - &rcirc;<sub>ui</sub>)<sup>2</sup> + &lambda; (||p<sub>u</sub>||<sup>2</sup> + ||q<sub>i</sub>||<sup>2</sup>)
+                  </div>
+                  <p class="card-mono-desc">
+                    Trained via <strong>Alternating Least Squares (ALS)</strong>: fixing <em>P</em> solves <em>Q</em> in closed form; fixing <em>Q</em> solves <em>P</em>.
+                  </p>
+                  
+                  <button class="btn-ppt" id="btnRunMatrixAnim" style="margin-top: 14px; width: 100%; justify-content: center;">
+                    &blacktriangleright; Animate Dot Product Calculation (Row u &times; Col i)
+                  </button>
+                </div>
+              </div>
 
-                <!-- Funnel Stage 3 -->
-                <polygon id="svgStage2" class="funnel-stage-polygon" points="130,171 270,171 230,238 170,238" fill="#1f1f1f" stroke="#ffffff" stroke-width="1.5" />
-                <text x="200" y="210" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="11" font-weight="700">RERANKING: 200 CANDIDATES</text>
+              <!-- Animated Matrix Visualizer -->
+              <div class="card-mono" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">
+                  INTERACTIVE MATRIX MULTIPLICATION: R &approx; P &times; Q<sup>T</sup>
+                </div>
 
-                <!-- Funnel Stage 4 -->
-                <polygon id="svgStage3" class="funnel-stage-polygon" points="170,244 230,244 210,300 190,300" fill="#000000" stroke="#ffffff" stroke-width="2" />
-                <text x="200" y="278" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="10" font-weight="700">PAGE SLATE: 10-20</text>
+                <div class="matrix-stage">
+                  <!-- User Matrix P -->
+                  <div class="matrix-box">
+                    <div style="font-size: 0.7rem; color: var(--text-dim);">P (User u=2)</div>
+                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
+                      <div class="m-cell">0.2</div><div class="m-cell">0.8</div><div class="m-cell">0.1</div>
+                      <div class="m-cell active-row" id="pCell0">0.9</div>
+                      <div class="m-cell active-row" id="pCell1">0.1</div>
+                      <div class="m-cell active-row" id="pCell2">0.7</div>
+                      <div class="m-cell">0.4</div><div class="m-cell">0.3</div><div class="m-cell">0.6</div>
+                    </div>
+                  </div>
+
+                  <div style="font-size: 1.4rem;">&times;</div>
+
+                  <!-- Item Matrix Q -->
+                  <div class="matrix-box">
+                    <div style="font-size: 0.7rem; color: var(--text-dim);">Q<sup>T</sup> (Item i=1)</div>
+                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
+                      <div class="m-cell active-col" id="qCell0">0.8</div>
+                      <div class="m-cell">0.3</div>
+                      <div class="m-cell">0.5</div>
+                      <div class="m-cell active-col" id="qCell1">0.2</div>
+                      <div class="m-cell">0.9</div>
+                      <div class="m-cell">0.1</div>
+                      <div class="m-cell active-col" id="qCell2">0.9</div>
+                      <div class="m-cell">0.4</div>
+                      <div class="m-cell">0.7</div>
+                    </div>
+                  </div>
+
+                  <div style="font-size: 1.4rem;">=</div>
+
+                  <!-- Resulting R Matrix -->
+                  <div class="matrix-box">
+                    <div style="font-size: 0.7rem; color: var(--text-dim);">&rcirc;<sub>2,1</sub> Rating</div>
+                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
+                      <div class="m-cell">3.8</div><div class="m-cell">2.1</div><div class="m-cell">4.0</div>
+                      <div class="m-cell target-cell" id="rTargetCell">4.75</div>
+                      <div class="m-cell">3.2</div><div class="m-cell">2.9</div>
+                      <div class="m-cell">1.8</div><div class="m-cell">4.1</div><div class="m-cell">3.5</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="matrixCalcLog" style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.8rem; text-align: center; color: var(--text);">
+                  Calculation: (0.9 &times; 0.8) + (0.1 &times; 0.2) + (0.7 &times; 0.9) + &mu; = <strong>4.75 &starf;</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 03 // MATRIX DECOMPOSITION</span>
+            <span>NEXT: TWO-TOWER NEURAL RETRIEVAL &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 04: TWO-TOWER NEURAL RETRIEVAL & MIPS
+             ============================================== -->
+        <div class="slide" id="slide-3">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 03 &mdash; DEEP LEARNING ARCHITECTURES</div>
+              <h2 class="slide-title">Two-Tower Neural Retrieval &amp; MIPS</h2>
+              <p class="slide-subtitle">
+                Decoupled dual-encoders transforming heterogeneous user history and catalog metadata into a shared geometric space.
+              </p>
+            </div>
+            <div class="slide-chip">SUB-5ms VECTOR ANN</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="split-2col">
+              <div class="card-mono">
+                <div class="card-mono-title">Dual-Encoder Architecture</div>
+                
+                <div class="tower-diagram" style="margin: 16px 0;">
+                  <!-- User Tower -->
+                  <div class="tower-box">
+                    <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;">USER TOWER f<sub>&theta;</sub>(u)</div>
+                    <div class="tower-layer" id="uLayer1">History &amp; Device Context</div>
+                    <div class="tower-layer" id="uLayer2">Transformer Self-Attention</div>
+                    <div class="tower-layer" id="uLayer3">Dense Projection (128-d)</div>
+                    <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800;">&rarr; u &isin; &Ropf;<sup>128</sup></div>
+                  </div>
+
+                  <div style="font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800;">&bull;</div>
+
+                  <!-- Item Tower -->
+                  <div class="tower-box">
+                    <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;">ITEM TOWER g<sub>&phi;</sub>(i)</div>
+                    <div class="tower-layer" id="iLayer1">Title, Cast, Genre Tokens</div>
+                    <div class="tower-layer" id="iLayer2">Deep Multi-Layer Perceptron</div>
+                    <div class="tower-layer" id="iLayer3">Dense Projection (128-d)</div>
+                    <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800;">&rarr; v &isin; &Ropf;<sup>128</sup></div>
+                  </div>
+                </div>
+
+                <div class="formula-display" style="font-size: 0.85rem;">
+                  P(i | u) = exp( u<sup>T</sup> v<sub>i</sub> / &tau; ) / &sum;<sub>j</sub> exp( u<sup>T</sup> v<sub>j</sub> / &tau; )
+                </div>
+              </div>
+
+              <!-- Vector Space Angle Canvas / Visualizer -->
+              <div class="card-mono" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                  <div class="card-mono-title">Vector Space Maximum Inner Product Search (MIPS)</div>
+                  <p class="card-mono-desc">
+                    Item embeddings <em>v<sub>i</sub></em> are indexed offline into <strong>HNSW (Hierarchical Navigable Small World)</strong> graphs. Online query only executes 1 forward pass of <em>f(u)</em>, followed by a graph traversal:
+                  </p>
+                </div>
+
+                <!-- Interactive Cosine Distance Slider -->
+                <div style="background: #000000; border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin: 16px 0; text-align: center;">
+                  <svg viewBox="0 0 300 150" style="width: 100%; max-width: 280px; height: auto;">
+                    <line x1="150" y1="130" x2="270" y2="130" stroke="#555" stroke-width="2"/>
+                    <line x1="150" y1="130" x2="150" y2="20" stroke="#555" stroke-width="2"/>
+                    <!-- User Vector u -->
+                    <line id="vecU" x1="150" y1="130" x2="235" y2="45" stroke="#ffffff" stroke-width="3"/>
+                    <text x="245" y="42" fill="#ffffff" font-family="'Geist Mono'" font-size="11" font-weight="700">u (User)</text>
+                    <!-- Item Vector v -->
+                    <line id="vecV" x1="150" y1="130" x2="220" y2="60" stroke="#888888" stroke-width="2" stroke-dasharray="4,4"/>
+                    <text x="228" y="70" fill="#888888" font-family="'Geist Mono'" font-size="11">v (Item)</text>
+                    <!-- Angle arc -->
+                    <path id="angleArc" d="M 180 130 A 30 30 0 0 0 171 109" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+                  </svg>
+
+                  <div style="font-family: var(--font-mono); font-size: 0.85rem; margin-top: 10px;">
+                    Angle &theta;: <span id="angleVal">15&deg;</span> &bull; Cosine Similarity: <strong id="cosSimVal">0.965</strong>
+                  </div>
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+                  Logarithmic time complexity: <strong>O(log N)</strong> vs Exhaustive scan <strong>O(N)</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 04 // TWO-TOWER ENCODERS</span>
+            <span>NEXT: ANIMATED CANDIDATE FUNNEL &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 05: ANIMATED 4-STAGE CANDIDATE FUNNEL
+             ============================================== -->
+        <div class="slide" id="slide-4">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 04 &mdash; THE PRODUCTION FUNNEL</div>
+              <h2 class="slide-title">Animated 4-Stage Candidate Funnel</h2>
+              <p class="slide-subtitle">
+                Real-time particle simulation demonstrating candidate volume pruning from 10M titles to 10 page items.
+              </p>
+            </div>
+            <div class="slide-chip">CANDIDATE PRUNING RATIO: 1,000,000 : 1</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="split-2col">
+              <!-- Canvas Particle Funnel -->
+              <div class="funnel-canvas-wrapper">
+                <canvas id="funnelCanvas"></canvas>
+                <div style="position: absolute; bottom: 10px; right: 12px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">
+                  LIVE PARTICLE EMITTER
+                </div>
+              </div>
+
+              <!-- Cascade Stage Metrics -->
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="card-mono" style="padding: 12px 18px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
+                    <span>1. RETRIEVAL (Two-Tower MIPS)</span>
+                    <span>10M &rarr; 1,000 items</span>
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                    Latency: &lt;4ms &bull; Model: Dual DNN + Vector ANN &bull; Priority: 100% Recall
+                  </div>
+                </div>
+
+                <div class="card-mono" style="padding: 12px 18px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
+                    <span>2. FIRST-STAGE SCORING (DCN)</span>
+                    <span>1,000 &rarr; 200 items</span>
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                    Latency: &lt;5ms &bull; Model: Deep &amp; Cross Network &bull; Context: Device &amp; Time
+                  </div>
+                </div>
+
+                <div class="card-mono" style="padding: 12px 18px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
+                    <span>3. HEAVY RERANKER (MMoE / BST)</span>
+                    <span>200 &rarr; 50 items</span>
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                    Latency: &lt;6ms &bull; Multi-task objectives: P(Click), P(Complete), P(Share)
+                  </div>
+                </div>
+
+                <div class="card-mono" style="padding: 12px 18px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
+                    <span>4. SLATE &amp; BANDIT GENERATION</span>
+                    <span>50 &rarr; 10 items</span>
+                  </div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                    Latency: &lt;2ms &bull; Model: LinUCB Artwork Bandits + DPP Diversity
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 05 // CANDIDATE CASCADE</span>
+            <span>NEXT: NETFLIX 2D PAGE OPTIMIZATION &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 06: NETFLIX 2D PAGE GRID GENERATION
+             ============================================== -->
+        <div class="slide" id="slide-5">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 05 &mdash; NETFLIX WALKTHROUGH</div>
+              <h2 class="slide-title">Netflix: Two-Dimensional Slate Generation</h2>
+              <p class="slide-subtitle">
+                The homepage is not a 1D ranked list. It is a 2D matrix optimizing vertical row composition and horizontal title ordering.
+              </p>
+            </div>
+            <div class="slide-chip">PAGE-LEVEL UTILITY</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="split-2col">
+              <div>
+                <p class="card-mono-desc" style="font-size: 0.9rem; margin-bottom: 12px;">
+                  Netflix solves a simultaneous 2D page ranking problem:
+                </p>
+
+                <div class="formula-display" style="font-size: 0.85rem;">
+                  Score(Page) = &sum;<sub>r=1..R</sub> w<sub>r</sub> &times; Score(Row<sub>r</sub>) &minus; Penalty(Overlap)
+                </div>
+
+                <div class="card-mono" style="margin-top: 14px;">
+                  <div class="card-mono-title">Specialized Row Generation Algorithms</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 2;">
+                    <div>&bull; <strong>PVR (Personalized Video Ranker)</strong>: General catalog ranking.</div>
+                    <div>&bull; <strong>Sims (Item-Item)</strong>: "Because You Watched Stranger Things".</div>
+                    <div>&bull; <strong>Top-N / Trending Now</strong>: Temporal decay + geographic velocity.</div>
+                    <div>&bull; <strong>Continue Watching</strong>: Time elapsed since last chunk consumed.</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Animated Simulated Netflix UI Rows in Strict Monochrome -->
+              <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="card-mono" style="padding: 12px 16px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
+                    <span style="font-weight: 700;">&gt; ROW 1: TOP PICKS FOR YOU (PVR)</span>
+                    <span style="color: var(--text-dim);">P(stream): 0.982</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Interstellar</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Dark (S3)</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Ex Machina</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Arrival</div>
+                  </div>
+                </div>
+
+                <div class="card-mono" style="padding: 12px 16px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
+                    <span style="font-weight: 700;">&gt; ROW 2: BECAUSE YOU WATCHED OPPENHEIMER</span>
+                    <span style="color: var(--text-dim);">Cosine Sim: 0.914</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Chernobyl</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Imitation Game</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Dunkirk</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">A Beautiful Mind</div>
+                  </div>
+                </div>
+
+                <div class="card-mono" style="padding: 12px 16px;">
+                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
+                    <span style="font-weight: 700;">&gt; ROW 3: GENRE DIVERSITY (CRIME &amp; THRILLER)</span>
+                    <span style="color: var(--text-dim);">Entropy Boost: +0.42</span>
+                  </div>
+                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Mindhunter</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Zodiac</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Seven</div>
+                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Sicario</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 06 // NETFLIX 2D GRID</span>
+            <span>NEXT: DYNAMIC ARTWORK BANDITS MATH &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 07: NETFLIX DYNAMIC ARTWORK BANDIT MATH
+             ============================================== -->
+        <div class="slide" id="slide-6">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 06 &mdash; CONTEXTUAL MULTI-ARMED BANDITS</div>
+              <h2 class="slide-title">Dynamic Artwork Personalization: LinUCB Math</h2>
+              <p class="slide-subtitle">
+                Mathematical formulation of how Netflix selects personalized thumbnail artwork per user in real time.
+              </p>
+            </div>
+            <div class="slide-chip">LINUCB ALGORITHM</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="bandit-container">
+              <div>
+                <!-- LinUCB Equation with Interactive Term Highlight -->
+                <div class="formula-display" style="font-size: 0.95rem; line-height: 1.8;">
+                  a<sup>*</sup> = argmax<sub>a</sub> [ 
+                  <span class="math-term highlight" id="termExploit">&theta;<sub>a</sub><sup>T</sup> x<sub>u</sub></span> 
+                  + 
+                  <span class="math-term" id="termExplore">&alpha; &radic;( x<sub>u</sub><sup>T</sup> A<sub>a</sub><sup>-1</sup> x<sub>u</sub> )</span> 
+                  ]
+                </div>
+
+                <div class="card-mono" style="margin-top: 12px;">
+                  <div id="termExplText">
+                    <strong style="color: var(--text);">Term 1: &theta;<sub>a</sub><sup>T</sup> x<sub>u</sub> (Exploitation)</strong><br>
+                    <span style="font-size: 0.8rem; color: var(--text-dim);">
+                      Estimated ridge regression payoff for arm <em>a</em> given user feature vector <em>x<sub>u</sub></em> (past genre interactions, actor preferences).
+                    </span>
+                  </div>
+                  <div id="termExploreText" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
+                    <strong style="color: var(--text);">Term 2: &alpha;&radic;(...) (Exploration)</strong><br>
+                    Width of the uncertainty ellipsoid. If an artwork has rarely been shown to this demographic, variance is high, granting an exploration bonus.
+                  </div>
+                </div>
+
+                <!-- Persona Switcher -->
+                <div style="margin-top: 16px;">
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px;">
+                    SIMULATE USER CONTEXT VECTOR x<sub>u</sub>:
+                  </div>
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="btn-ppt active" id="btnP1" onclick="switchBanditPersona('action')">Persona: Action Fan</button>
+                    <button class="btn-ppt" id="btnP2" onclick="switchBanditPersona('romance')">Persona: Romance Fan</button>
+                    <button class="btn-ppt" id="btnP3" onclick="switchBanditPersona('uma')">Persona: Uma Thurman Fan</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Animated Artwork Card -->
+              <div class="artwork-art-box" id="banditArtCard">
+                <svg class="art-svg-bg" id="banditArtSvg" viewBox="0 0 320 180"></svg>
+                <div style="position: relative; z-index: 2; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 2px;">
+                  NETFLIX PERSONALIZED ARTWORK ARM
+                </div>
+
+                <div style="position: relative; z-index: 2;">
+                  <div style="font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px;" id="banditMovieTitle">PULP FICTION</div>
+                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);" id="banditArmLabel">
+                    Selected Arm: Weapon Standoff Variant
+                  </div>
+                  <div style="margin-top: 10px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; font-family: var(--font-mono); font-size: 0.7rem;">
+                    Predicted CTR: <strong id="banditCtrVal">21.8%</strong> &bull; Upper Bound: <strong id="banditUcbVal">0.962</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 07 // LINUCB CONTEXTUAL BANDITS</span>
+            <span>NEXT: POSITION BIAS &amp; EVALUATION &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 08: POSITION BIAS & INVERSE PROPENSITY SCORING
+             ============================================== -->
+        <div class="slide" id="slide-7">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 07 &mdash; EVALUATION RIGOR</div>
+              <h2 class="slide-title">Offline Bias: Inverse Propensity Scoring</h2>
+              <p class="slide-subtitle">
+                Correcting presentation bias in log click data so offline ranking benchmarks reflect true relevance.
+              </p>
+            </div>
+            <div class="slide-chip">DEBIASED EVALUATION</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="split-2col">
+              <div>
+                <div class="card-mono-title">The Position Bias Dilemma</div>
+                <p class="card-mono-desc">
+                  Position 1 receives <strong>400% more clicks</strong> simply because users read top-to-bottom, regardless of true quality. Evaluating models on raw clicks reinforces self-fulfilling feedback loops.
+                </p>
+
+                <div class="formula-display" style="font-size: 0.9rem; margin-top: 14px;">
+                  R&#770;<sub>IPS</sub> = 1/|D| &sum;<sub>(u,i) &isin; D</sub> [ y<sub>ui</sub> &times; c<sub>ui</sub> / P(O<sub>ui</sub>=1 | pos<sub>i</sub>) ]
+                </div>
+
+                <div class="card-mono" style="margin-top: 14px;">
+                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.8;">
+                    <div>&bull; <strong>y<sub>ui</sub></strong>: Binary feedback (click or stream &ge; 2 min)</div>
+                    <div>&bull; <strong>P(O<sub>ui</sub>=1 | pos)</strong>: Examination propensity at rank position</div>
+                    <div>&bull; <strong>c<sub>ui</sub></strong>: Counterfactual weight correcting observational bias</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Animated Bar Comparison (Naive vs Unbiased IPS) -->
+              <div class="card-mono">
+                <div class="card-mono-title">Examined Click-Through Probability Across Ranks</div>
+                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 16px;">
+                  Comparing Naive Observed CTR vs Unbiased Examination Propensity:
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 0.75rem;">
+                  <!-- Rank 1 -->
+                  <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                      <span>Rank 1 (Top Hero)</span>
+                      <span>Observed: 42% &bull; Propensity: 0.88</span>
+                    </div>
+                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
+                      <div style="width: 88%; height: 100%; background: var(--text);"></div>
+                    </div>
+                  </div>
+
+                  <!-- Rank 3 -->
+                  <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                      <span>Rank 3 (Row Center)</span>
+                      <span>Observed: 18% &bull; Propensity: 0.42</span>
+                    </div>
+                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
+                      <div style="width: 42%; height: 100%; background: var(--text);"></div>
+                    </div>
+                  </div>
+
+                  <!-- Rank 10 -->
+                  <div style="margin-bottom: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                      <span>Rank 10 (Far Right)</span>
+                      <span>Observed: 4% &bull; Propensity: 0.12</span>
+                    </div>
+                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
+                      <div style="width: 12%; height: 100%; background: var(--text);"></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
+                  &bull; IPS mathematically guarantees unbiased off-policy A/B risk reduction.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 08 // IPS BIAS MITIGATION</span>
+            <span>NEXT: SYSTEM ARCHITECTURE BLUEPRINT &rarr;</span>
+          </div>
+        </div>
+
+        <!-- ==============================================
+             SLIDE 09: SYSTEM ARCHITECTURE BLUEPRINT
+             ============================================== -->
+        <div class="slide" id="slide-8">
+          <div class="slide-header">
+            <div>
+              <div class="slide-meta-tag">// SECTION 08 &mdash; PRODUCTION SYSTEM BLUEPRINT</div>
+              <h2 class="slide-title">End-to-End Production Serving Pipeline</h2>
+              <p class="slide-subtitle">
+                Complete data plane from offline training and nearline streaming feature extraction to sub-15ms online serving.
+              </p>
+            </div>
+            <div class="slide-chip">HIGH AVAILABILITY ARCHITECTURE</div>
+          </div>
+
+          <div class="slide-body">
+            <div class="card-mono" style="padding: 24px;">
+              <svg viewBox="0 0 1000 320" style="width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">
+                <!-- Data Streams -->
+                <rect x="20" y="40" width="180" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
+                <text x="110" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">USER EVENTS</text>
+                <text x="110" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Clicks, Plays, Skips</text>
+
+                <!-- Apache Kafka / Flink -->
+                <path d="M 200 85 L 260 85" stroke="#ffffff" stroke-width="2" marker-end="url(#arrow)"/>
+                <rect x="260" y="40" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
+                <text x="360" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">STREAMING (FLINK)</text>
+                <text x="360" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Real-Time User State</text>
+
+                <!-- Feature Store -->
+                <path d="M 460 85 L 520 85" stroke="#ffffff" stroke-width="2"/>
+                <rect x="520" y="40" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
+                <text x="620" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">FEATURE STORE</text>
+                <text x="620" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Redis / Cassandra (P99 1ms)</text>
+
+                <!-- Offline Training -->
+                <rect x="260" y="190" width="200" height="90" rx="6" fill="#141414" stroke="#666666" stroke-width="1.5" stroke-dasharray="4,4"/>
+                <text x="360" y="225" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">OFFLINE TRAINING</text>
+                <text x="360" y="250" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Ray / PyTorch Two-Tower</text>
+
+                <!-- Vector DB -->
+                <path d="M 460 235 L 520 235" stroke="#666666" stroke-width="2" stroke-dasharray="4,4"/>
+                <rect x="520" y="190" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
+                <text x="620" y="225" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">VECTOR DB (HNSW)</text>
+                <text x="620" y="250" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Indexed Item Embeddings</text>
+
+                <!-- Online Serving Cluster -->
+                <path d="M 720 85 L 780 140" stroke="#ffffff" stroke-width="2"/>
+                <path d="M 720 235 L 780 180" stroke="#ffffff" stroke-width="2"/>
+                <rect x="780" y="110" width="200" height="100" rx="6" fill="#ffffff" stroke="#ffffff" stroke-width="2"/>
+                <text x="880" y="150" text-anchor="middle" fill="#000000" font-family="'Geist Mono'" font-size="13" font-weight="900">ONLINE ENVOY gRPC</text>
+                <text x="880" y="172" text-anchor="middle" fill="#000000" font-family="'Geist Mono'" font-size="10">Retrieval &rarr; Scoring &rarr; Bandit</text>
+                <text x="880" y="192" text-anchor="middle" fill="#333333" font-family="'Geist Mono'" font-size="9" font-weight="700">Total Serving: &le; 15ms</text>
               </svg>
             </div>
-
-            <div class="funnel-details-panel">
-              <span class="funnel-badge" id="stageBadge">Stage 01 // Sub-5ms</span>
-              <h3 class="funnel-stage-title" id="stageTitle">Candidate Retrieval</h3>
-              <p class="card-text" id="stageDesc">
-                Fast Approximate Nearest Neighbor (ANN) search over dense item embeddings. Employs Two-Tower neural networks, graph-based indices (HNSW), or inverted indices to quickly eliminate 99.99% of non-relevant catalog items.
-              </p>
-
-              <table class="funnel-specs-table">
-                <tr>
-                  <td>Input Volume</td>
-                  <td id="specInput">10,000,000 items</td>
-                </tr>
-                <tr>
-                  <td>Output Candidates</td>
-                  <td id="specOutput">1,000 items</td>
-                </tr>
-                <tr>
-                  <td>P99 Latency Budget</td>
-                  <td id="specLatency">&lt; 5 ms</td>
-                </tr>
-                <tr>
-                  <td>Primary Algorithm</td>
-                  <td id="specAlgo">Two-Tower DNN + ScaNN / FAISS</td>
-                </tr>
-              </table>
-            </div>
           </div>
-        </div>
-      </section>
 
-      <!-- Section 2: Mathematical Paradigms -->
-      <section class="section-block" id="paradigms">
-        <div class="section-num">// SECTION 02</div>
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-heading">Core Paradigms &amp; Mathematical Formulation</h2>
-            <p class="section-subtitle">
-              From classical collaborative matrix factorization to modern deep dual-encoder networks and Maximum Inner Product Search (MIPS).
-            </p>
+          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
+            <span>SLIDE 09 // PRODUCTION BLUEPRINT</span>
+            <span>END OF SLIDE DECK &bull; PRESS [G] FOR GRID</span>
           </div>
         </div>
 
-        <div class="grid-2col">
-          <!-- Col 1: Collaborative Filtering -->
-          <div class="card-mono">
-            <span class="card-tag">[FOUNDATIONAL ALGORITHM]</span>
-            <h3 class="card-title">1. Matrix Factorization (SVD / ALS)</h3>
-            <p class="card-text">
-              Projects sparse user-item interaction matrix <em>R &isin; &Ropf;<sup>|U| &times; |I|</sup></em> into low-dimensional latent space <em>d &Lt; min(|U|, |I|)</em>. Affinity is predicted by inner product between user latent vector <em>p<sub>u</sub></em> and item latent vector <em>q<sub>i</sub></em>:
-            </p>
-            <div class="math-box">
-              &rcirc;<sub>ui</sub> = &mu; + b<sub>u</sub> + b<sub>i</sub> + p<sub>u</sub><sup>T</sup> q<sub>i</sub>
-            </div>
-            <p class="card-text">
-              Trained via Alternating Least Squares (ALS) or Stochastic Gradient Descent with L2 regularization penalty:
-            </p>
-            <div class="math-box">
-              min &sum; (r<sub>ui</sub> - &rcirc;<sub>ui</sub>)<sup>2</sup> + &lambda; (||p<sub>u</sub>||<sup>2</sup> + ||q<sub>i</sub>||<sup>2</sup> + b<sub>u</sub><sup>2</sup> + b<sub>i</sub><sup>2</sup>)
-            </div>
-          </div>
-
-          <!-- Col 2: Two-Tower Neural Architectures -->
-          <div class="card-mono">
-            <span class="card-tag">[DEEP LEARNING SCALE]</span>
-            <h3 class="card-title">2. Two-Tower Neural Retrieval</h3>
-            <p class="card-text">
-              Decouples query and candidate spaces into two distinct deep networks: User Tower <em>f<sub>&theta;</sub>(u) &rarr; &Ropf;<sup>d</sup></em> and Item Tower <em>g<sub>&phi;</sub>(i) &rarr; &Ropf;<sup>d</sup></em>.
-            </p>
-            <div class="math-box">
-              P(i | u) = exp( &lang; f<sub>&theta;</sub>(u), g<sub>&phi;</sub>(i) &rang; / &tau; ) / &sum; exp( &lang; f<sub>&theta;</sub>(u), g<sub>&phi;</sub>(j) &rang; / &tau; )
-            </div>
-            <p class="card-text">
-              Item embeddings <em>g(i)</em> are pre-computed offline and indexed into sub-millisecond vector databases (HNSW, ScaNN). Online inference only executes the single forward pass of <em>f(u)</em> followed by a vector query.
-            </p>
-          </div>
-        </div>
-
-        <!-- Interactive Vector Dot Product Simulator -->
-        <div class="interactive-matrix-box">
-          <span class="card-tag">// INTERACTIVE VECTOR LATENT AFFINITY SIMULATOR</span>
-          <h3 class="card-title">Real-Time Embedding Dot Product Calculator</h3>
-          <p class="card-text">
-            Adjust the latent preference weights of the user vector and watch how the predicted affinity score responds dynamically.
-          </p>
-
-          <div class="matrix-flex">
-            <div class="matrix-entity">
-              <div class="matrix-label">User Vector (p<sub>u</sub>)</div>
-              <div class="vector-values" id="userVecDisplay">[0.80, 0.20, 0.65]</div>
-            </div>
-
-            <div class="matrix-op">&bull;</div>
-
-            <div class="matrix-entity">
-              <div class="matrix-label">Item Vector (q<sub>i</sub>)</div>
-              <div class="vector-values" id="itemVecDisplay">[0.75, 0.15, 0.85]</div>
-            </div>
-
-            <div class="matrix-op">=</div>
-
-            <div class="matrix-result">
-              <span>SCORE: </span>
-              <span id="dotProductResult">1.182</span>
-            </div>
-          </div>
-
-          <div class="vector-slider-row">
-            <div class="slider-group">
-              <label>User: Sci-Fi Affinity (<span id="valU1">0.80</span>)</label>
-              <input type="range" id="sliderU1" min="0" max="1" step="0.05" value="0.8">
-            </div>
-            <div class="slider-group">
-              <label>User: Romance Affinity (<span id="valU2">0.20</span>)</label>
-              <input type="range" id="sliderU2" min="0" max="1" step="0.05" value="0.2">
-            </div>
-            <div class="slider-group">
-              <label>User: High-Pacing Affinity (<span id="valU3">0.65</span>)</label>
-              <input type="range" id="sliderU3" min="0" max="1" step="0.05" value="0.65">
-            </div>
-            <div class="slider-group">
-              <label>Item: Sci-Fi Weight (<span id="valI1">0.75</span>)</label>
-              <input type="range" id="sliderI1" min="0" max="1" step="0.05" value="0.75">
-            </div>
-            <div class="slider-group">
-              <label>Item: Romance Weight (<span id="valI2">0.15</span>)</label>
-              <input type="range" id="sliderI2" min="0" max="1" step="0.05" value="0.15">
-            </div>
-            <div class="slider-group">
-              <label>Item: Pacing Weight (<span id="valI3">0.85</span>)</label>
-              <input type="range" id="sliderI3" min="0" max="1" step="0.05" value="0.85">
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 3: In-Depth Netflix Case Study -->
-      <section class="section-block" id="netflix-walkthrough">
-        <div class="section-num">// SECTION 03 &mdash; PRODUCTION CASE STUDY</div>
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-heading">Netflix: Two-Dimensional Page Ranking &amp; Dynamic Artwork Bandits</h2>
-            <p class="section-subtitle">
-              Netflix's recommendation engine is not a single list ranking. It is a 2D matrix of personalized rows combined with contextual multi-armed bandits that personalize thumbnail artwork for every individual subscriber.
-            </p>
-          </div>
-        </div>
-
-        <div class="netflix-case-container">
-          <div class="netflix-banner">
-            <div>
-              <span class="netflix-badge">NETFLIX ALGORITHMIC SYSTEM ARCHITECTURE</span>
-            </div>
-            <div style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">
-              Production Case Analysis // Machine Learning at Scale
-            </div>
-          </div>
-
-          <div class="netflix-inner-body">
-            <!-- 2D Page Generation Explanation -->
-            <div style="margin-bottom: 32px;">
-              <h3 class="card-title">1. The 2D Page Generation Paradigm</h3>
-              <p class="card-text">
-                The Netflix homepage solves a two-dimensional optimization problem: <strong>row selection and row ordering</strong> (vertical axis) combined with <strong>video ranking within each row</strong> (horizontal axis).
-              </p>
-              <div class="math-box">
-                Max Score(Page) = &sum;<sub>r=1..R</sub> w<sub>r</sub> &times; Score(Row<sub>r</sub>) - Penalty(Redundancy(Row<sub>r</sub>, PreviousRows))
-              </div>
-            </div>
-
-            <!-- Simulated 2D Row Matrix -->
-            <div class="row-matrix-demo">
-              <div class="netflix-row">
-                <div class="row-header-mono">
-                  <span class="row-title-mono">&gt; TOP PICKS FOR YOU (PERSONALIZED VIDEO RANKER - PVR)</span>
-                  <span class="row-meta-badge">Model: Multi-Task Neural Ranker // RTT: 12ms</span>
-                </div>
-                <div class="row-items-strip">
-                  <div class="strip-item"><span class="strip-item-title">Interstellar</span><span class="strip-item-score">P(play): 0.984</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Blade Runner 2049</span><span class="strip-item-score">P(play): 0.961</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Dark (Series)</span><span class="strip-item-score">P(play): 0.935</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Ex Machina</span><span class="strip-item-score">P(play): 0.912</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Arrival</span><span class="strip-item-score">P(play): 0.899</span></div>
-                </div>
-              </div>
-
-              <div class="netflix-row">
-                <div class="row-header-mono">
-                  <span class="row-title-mono">&gt; BECAUSE YOU WATCHED 'OPPENHEIMER' (SIM-ITEM SIMILARITY)</span>
-                  <span class="row-meta-badge">Cosine Dist in Item Embedding Space</span>
-                </div>
-                <div class="row-items-strip">
-                  <div class="strip-item"><span class="strip-item-title">Chernobyl</span><span class="strip-item-score">Cos-sim: 0.92</span></div>
-                  <div class="strip-item"><span class="strip-item-title">The Imitation Game</span><span class="strip-item-score">Cos-sim: 0.88</span></div>
-                  <div class="strip-item"><span class="strip-item-title">A Beautiful Mind</span><span class="strip-item-score">Cos-sim: 0.84</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Dunkirk</span><span class="strip-item-score">Cos-sim: 0.81</span></div>
-                  <div class="strip-item"><span class="strip-item-title">Theory of Everything</span><span class="strip-item-score">Cos-sim: 0.79</span></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Dynamic Artwork Personalization Bandit Demo -->
-            <div class="artwork-bandit-demo">
-              <span class="card-tag">[BREAKTHROUGH PRODUCTION MECHANISM]</span>
-              <h3 class="card-title">2. Dynamic Artwork Personalization via Contextual Bandits</h3>
-              <p class="card-text">
-                Netflix discovered that thumbnail imagery is the single biggest factor influencing whether a member engages with a title. Instead of one static poster, Netflix trains a <strong>Contextual Multi-Armed Bandit (LinUCB / Thompson Sampling)</strong> that custom-selects the thumbnail according to user historical viewing patterns.
-              </p>
-
-              <!-- Interactive Persona Switcher -->
-              <div style="margin: 20px 0 10px 0;">
-                <label style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); display: block; margin-bottom: 8px;">
-                  SELECT USER BEHAVIOR PROFILE TO SIMULATE BANDIT ARM SELECTION:
-                </label>
-                <div class="persona-selector">
-                  <button class="persona-btn active" data-persona="action">Persona: Action &amp; Explosions Fan</button>
-                  <button class="persona-btn" data-persona="romance">Persona: Romance &amp; Drama Enthusiast</button>
-                  <button class="persona-btn" data-persona="cast">Persona: Star Actor / Uma Thurman Fan</button>
-                </div>
-              </div>
-
-              <!-- Artwork Preview & Telemetry -->
-              <div class="artwork-preview-grid">
-                <div class="dynamic-title-card" id="titleCardArt">
-                  <svg class="card-art-svg" viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg" id="cardSvgGraphic">
-                    <!-- Dynamic artwork SVG drawn via JS -->
-                  </svg>
-                  <div class="card-watermark">NETFLIX ORIGINAL // DYNAMIC THUMBNAIL ARM</div>
-                  <div class="card-movie-info">
-                    <div class="card-movie-title" id="cardMovieTitle">PULP FICTION</div>
-                    <div class="card-variant-label" id="cardVariantText">ARM 01: High-Stakes Duel &amp; Guns</div>
-                  </div>
-                </div>
-
-                <div class="bandit-telemetry">
-                  <div style="font-family: var(--font-mono); font-weight: 700; margin-bottom: 12px; font-size: 0.9rem;">
-                    CONTEXTUAL BANDIT TELEMETRY (LinUCB)
-                  </div>
-                  <p class="card-text" style="font-size: 0.85rem;" id="banditExplanation">
-                    User history shows 78% action & thriller title completion. Bandit selects Gun Duel variant based on highest expected reward estimate &mu;<sub>a</sub> + &alpha;&radic;(x<sup>T</sup> A<sub>a</sub><sup>-1</sup> x).
-                  </p>
-
-                  <div class="bandit-metric-bar">
-                    <div class="bar-label-row">
-                      <span>Predicted Click Probability (CTR)</span>
-                      <span id="banditCtr">18.4% (+6.8% vs static)</span>
-                    </div>
-                    <div class="bar-track">
-                      <div class="bar-fill" id="barCtr" style="width: 76%;"></div>
-                    </div>
-                  </div>
-
-                  <div class="bandit-metric-bar">
-                    <div class="bar-label-row">
-                      <span>Bandit Exploration Confidence Bound</span>
-                      <span id="banditConf">0.942 (Low Variance)</span>
-                    </div>
-                    <div class="bar-track">
-                      <div class="bar-fill" id="barConf" style="width: 94%;"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 4: Evaluation Metrics & Bias Mitigation -->
-      <section class="section-block" id="evaluation">
-        <div class="section-num">// SECTION 04</div>
-        <div class="section-header-row">
-          <div>
-            <h2 class="section-heading">Evaluation: The Offline-to-Online Gap</h2>
-            <p class="section-subtitle">
-              High offline benchmark accuracy frequently fails in real-world production due to presentation bias, popularity bias, and feedback loops.
-            </p>
-          </div>
-        </div>
-
-        <div class="grid-2col">
-          <div class="card-mono">
-            <span class="card-tag">[OFFLINE MATHEMATICAL BENCHMARKS]</span>
-            <h3 class="card-title">Offline Ranking Metrics</h3>
-            <ul style="list-style: none; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
-              <li>&bull; <strong>NDCG@K</strong>: Evaluates logarithmic position discount of relevant items.</li>
-              <li>&bull; <strong>Recall@K / HitRate@K</strong>: Measures coverage of ground truth watch events.</li>
-              <li>&bull; <strong>MRR (Mean Reciprocal Rank)</strong>: 1 / rank of first relevant item clicked.</li>
-              <li>&bull; <strong>Intra-List Diversity</strong>: Cosine distance between recommended items to avoid echo-chambers.</li>
-            </ul>
-          </div>
-
-          <div class="card-mono">
-            <span class="card-tag">[PRODUCTION BUSINESS TELEMETRY]</span>
-            <h3 class="card-title">Online Live Telemetry &amp; A/B Metrics</h3>
-            <ul style="list-style: none; font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary); line-height: 2;">
-              <li>&bull; <strong>Take-Rate (Session CTR)</strong>: Fraction of sessions ending in a play event.</li>
-              <li>&bull; <strong>Median Time to Play</strong>: Seconds elapsed before user starts streaming.</li>
-              <li>&bull; <strong>Day-28 Retention / Churn Rate</strong>: Ultimate business North-Star metric.</li>
-              <li>&bull; <strong>Inverse Propensity Scoring (IPS)</strong>: Counterfactual weighting to correct position bias.</li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-    </div>
-
-    <!-- ==========================================
-         VIEW 2: PRESENTATION SLIDE DECK VIEW
-         ========================================== -->
-    <div class="deck-container" id="deckView">
-      <div class="slide-wrapper">
-        <div class="slide-meta">
-          <span id="slideDeckCounter">SLIDE 01 / 06</span>
-          <span>RECSYS.SYS ARCHITECTURE BRIEFING</span>
-          <span>[ARROW KEYS &larr; / &rarr; TO NAVIGATE]</span>
-        </div>
-
-        <div class="slide-body" id="slideContent">
-          <!-- Slide injected dynamically by JS -->
-        </div>
-
-        <div class="deck-controls">
-          <button class="btn-mono" id="prevSlideBtn">&larr; Previous Slide</button>
-          <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">
-            Use keyboard [&larr;] and [&rarr;] or buttons
-          </span>
-          <button class="btn-mono" id="nextSlideBtn">Next Slide &rarr;</button>
-        </div>
       </div>
     </div>
-
   </main>
 
-  <!-- Site Footer -->
-  <footer class="site-footer">
-    <div class="footer-left">
-      <span style="font-weight: 700; color: var(--text-primary);">RECSYS.SYS</span>
-      <span>//</span>
-      <span>PRODUCTION RECOMMENDER SYSTEMS ARCHITECTURE CASE STUDY</span>
+  <!-- Bottom Slide Progress & Controls -->
+  <footer class="ppt-footer">
+    <div class="slide-progress-bar" id="slideProgressBar" style="width: 11%;"></div>
+
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span id="footerSlideCounter">01 / 09</span>
+      <span style="color: var(--text-muted);">|</span>
+      <span id="footerSlideTitle" style="color: var(--text-dim);">TITLE &amp; AGENDA</span>
     </div>
-    <div>
-      <span>STRICT MONOCHROME SPECIFICATION &bull; NETFLIX WALKTHROUGH</span>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button class="nav-arrow-btn" id="btnPrevSlide" title="Previous Slide (←)">&larr;</button>
+      <button class="nav-arrow-btn" id="btnNextSlide" title="Next Slide (→)">&rarr;</button>
     </div>
   </footer>
 
-  <!-- Interactive JavaScript Application Logic -->
+  <!-- Grid Slide Overview Modal (Key G) -->
+  <div class="grid-overlay" id="gridOverlay">
+    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1280px; margin: 0 auto 30px auto; font-family: var(--font-mono);">
+      <h2 style="font-size: 1.2rem; font-weight: 800;">SLIDE OVERVIEW // 9 TOTAL SLIDES</h2>
+      <button class="btn-ppt" id="btnCloseOverview">Close (Esc)</button>
+    </div>
+
+    <div class="overview-grid" id="overviewGrid">
+      <!-- Grid thumbnails dynamically generated -->
+    </div>
+  </div>
+
   <script>
     // -------------------------------------------------------------
-    // 1. FUNNEL DATA & INTERACTION
+    // SLIDE DECK LOGIC & PRESENTATION CONTROLLER
     // -------------------------------------------------------------
-    const funnelStages = [
-      {
-        badge: "STAGE 01 // RETRIEVAL (SUB-5MS)",
-        title: "Candidate Retrieval (10M &rarr; 1,000)",
-        desc: "Fast Approximate Nearest Neighbor (ANN) search over dense item embeddings. Employs Two-Tower neural networks and vector indices (HNSW/ScaNN) to quickly prune 99.99% of non-relevant catalog titles.",
-        input: "10,000,000 items",
-        output: "1,000 candidates",
-        latency: "< 5 ms",
-        algo: "Two-Tower DNN + Vector ANN (FAISS/ScaNN)"
-      },
-      {
-        badge: "STAGE 02 // SCORING (SUB-15MS)",
-        title: "First-Stage Scoring (1,000 &rarr; 200)",
-        desc: "Applies lightweight machine learning models (e.g. Factorization Machines, gradient boosted trees, or distilled neural layers) with coarse user context (device, time of day, geo) to score the initial candidate pool.",
-        input: "1,000 candidates",
-        output: "200 candidates",
-        latency: "< 15 ms",
-        algo: "Deep & Cross Network (DCN) / LightGBM"
-      },
-      {
-        badge: "STAGE 03 // RERANKING (SUB-30MS)",
-        title: "Heavy Multi-Task Reranking (200 &rarr; 50)",
-        desc: "Full multi-task deep ranking network evaluating hundreds of rich real-time features: user sequence history, title freshness, completion probabilities P(watch > 2hr), P(click), and social engagement signals.",
-        input: "200 candidates",
-        output: "50 ranked items",
-        latency: "< 30 ms",
-        algo: "Behavior Sequence Transformer (BST) / MMoE"
-      },
-      {
-        badge: "STAGE 04 // SLATE & DIVERSITY (SUB-10MS)",
-        title: "Page Slate & Diversity (50 &rarr; 10-20)",
-        desc: "Final page assembly layer ensuring category diversity, freshness, removing previously watched or dismissed items, and applying multi-armed contextual bandits to select personalized thumbnail artwork.",
-        input: "50 ranked items",
-        output: "10-20 items per row",
-        latency: "< 10 ms",
-        algo: "Determinantal Point Processes (DPP) + Bandits"
-      }
+    const slidesData = [
+      { id: 0, title: "Title & Executive Agenda" },
+      { id: 1, title: "Formal Mathematical Objective" },
+      { id: 2, title: "Matrix Factorization (SVD / ALS)" },
+      { id: 3, title: "Two-Tower Neural Retrieval & MIPS" },
+      { id: 4, title: "Animated 4-Stage Candidate Funnel" },
+      { id: 5, title: "Netflix 2D Slate & Page Optimization" },
+      { id: 6, title: "Netflix Dynamic Artwork: LinUCB Bandits" },
+      { id: 7, title: "Position Bias & Inverse Propensity Scoring" },
+      { id: 8, title: "Production System Architecture Blueprint" }
     ];
 
-    const stageBtns = document.querySelectorAll('.funnel-step-btn');
-    const stageBadge = document.getElementById('stageBadge');
-    const stageTitle = document.getElementById('stageTitle');
-    const stageDesc = document.getElementById('stageDesc');
-    const specInput = document.getElementById('specInput');
-    const specOutput = document.getElementById('specOutput');
-    const specLatency = document.getElementById('specLatency');
-    const specAlgo = document.getElementById('specAlgo');
+    let currentSlide = 0;
+    const totalSlides = slidesData.length;
+    let autoPlayInterval = null;
 
-    function selectFunnelStage(index) {
-      stageBtns.forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
+    const deckHeaderTitle = document.getElementById('deckHeaderTitle');
+    const footerSlideCounter = document.getElementById('footerSlideCounter');
+    const footerSlideTitle = document.getElementById('footerSlideTitle');
+    const slideProgressBar = document.getElementById('slideProgressBar');
+    const btnPrevSlide = document.getElementById('btnPrevSlide');
+    const btnNextSlide = document.getElementById('btnNextSlide');
 
-      // Update SVG highlights
-      for (let i = 0; i < 4; i++) {
-        const poly = document.getElementById(`svgStage${i}`);
-        if (poly) {
+    function goToSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+
+      // Update slide classes
+      for (let i = 0; i < totalSlides; i++) {
+        const el = document.getElementById(`slide-${i}`);
+        if (el) {
+          el.classList.remove('active', 'prev-slide');
           if (i === index) {
-            poly.setAttribute('fill', '#ffffff');
-            poly.setAttribute('stroke', '#ffffff');
-          } else {
-            poly.setAttribute('fill', '#1a1a1a');
-            poly.setAttribute('stroke', '#444444');
+            el.classList.add('active');
+          } else if (i < index) {
+            el.classList.add('prev-slide');
           }
         }
       }
 
-      const stage = funnelStages[index];
-      stageBadge.textContent = stage.badge;
-      stageTitle.innerHTML = stage.title;
-      stageDesc.innerHTML = stage.desc;
-      specInput.textContent = stage.input;
-      specOutput.textContent = stage.output;
-      specLatency.textContent = stage.latency;
-      specAlgo.textContent = stage.algo;
-    }
+      currentSlide = index;
 
-    stageBtns.forEach((btn, idx) => {
-      btn.addEventListener('click', () => selectFunnelStage(idx));
-    });
+      // Update Header & Footer
+      const numStr = String(currentSlide + 1).padStart(2, '0');
+      const totStr = String(totalSlides).padStart(2, '0');
+      deckHeaderTitle.textContent = `SLIDE ${numStr} // ${slidesData[currentSlide].title.toUpperCase()}`;
+      footerSlideCounter.textContent = `${numStr} / ${totStr}`;
+      footerSlideTitle.textContent = slidesData[currentSlide].title.toUpperCase();
 
-    for (let i = 0; i < 4; i++) {
-      const poly = document.getElementById(`svgStage${i}`);
-      if (poly) {
-        poly.addEventListener('click', () => selectFunnelStage(i));
+      const progress = ((currentSlide + 1) / totalSlides) * 100;
+      slideProgressBar.style.width = `${progress}%`;
+
+      btnPrevSlide.disabled = currentSlide === 0;
+      btnNextSlide.disabled = currentSlide === totalSlides - 1;
+
+      // Trigger custom animations on specific slides
+      if (currentSlide === 4) {
+        initFunnelAnimation();
       }
     }
 
-    // -------------------------------------------------------------
-    // 2. INTERACTIVE DOT PRODUCT CALCULATOR
-    // -------------------------------------------------------------
-    const sliderU1 = document.getElementById('sliderU1');
-    const sliderU2 = document.getElementById('sliderU2');
-    const sliderU3 = document.getElementById('sliderU3');
-    const sliderI1 = document.getElementById('sliderI1');
-    const sliderI2 = document.getElementById('sliderI2');
-    const sliderI3 = document.getElementById('sliderI3');
+    btnPrevSlide.addEventListener('click', () => goToSlide(currentSlide - 1));
+    btnNextSlide.addEventListener('click', () => goToSlide(currentSlide + 1));
 
-    const valU1 = document.getElementById('valU1');
-    const valU2 = document.getElementById('valU2');
-    const valU3 = document.getElementById('valU3');
-    const valI1 = document.getElementById('valI1');
-    const valI2 = document.getElementById('valI2');
-    const valI3 = document.getElementById('valI3');
+    // Keyboard Controller
+    window.addEventListener('keydown', (e) => {
+      if (gridOverlay.classList.contains('active')) {
+        if (e.key === 'Escape' || e.key === 'g' || e.key === 'G') {
+          closeOverview();
+        }
+        return;
+      }
 
-    const userVecDisplay = document.getElementById('userVecDisplay');
-    const itemVecDisplay = document.getElementById('itemVecDisplay');
-    const dotProductResult = document.getElementById('dotProductResult');
-
-    function updateDotProduct() {
-      const u1 = parseFloat(sliderU1.value);
-      const u2 = parseFloat(sliderU2.value);
-      const u3 = parseFloat(sliderU3.value);
-      const i1 = parseFloat(sliderI1.value);
-      const i2 = parseFloat(sliderI2.value);
-      const i3 = parseFloat(sliderI3.value);
-
-      valU1.textContent = u1.toFixed(2);
-      valU2.textContent = u2.toFixed(2);
-      valU3.textContent = u3.toFixed(2);
-      valI1.textContent = i1.toFixed(2);
-      valI2.textContent = i2.toFixed(2);
-      valI3.textContent = i3.toFixed(2);
-
-      userVecDisplay.textContent = `[${u1.toFixed(2)}, ${u2.toFixed(2)}, ${u3.toFixed(2)}]`;
-      itemVecDisplay.textContent = `[${i1.toFixed(2)}, ${i2.toFixed(2)}, ${i3.toFixed(2)}]`;
-
-      const dot = (u1 * i1) + (u2 * i2) + (u3 * i3);
-      dotProductResult.textContent = dot.toFixed(3);
-    }
-
-    [sliderU1, sliderU2, sliderU3, sliderI1, sliderI2, sliderI3].forEach(s => {
-      s.addEventListener('input', updateDotProduct);
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        goToSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        goToSlide(currentSlide - 1);
+      } else if (e.key === 'Home') {
+        goToSlide(0);
+      } else if (e.key === 'End') {
+        goToSlide(totalSlides - 1);
+      } else if (e.key === 'g' || e.key === 'G') {
+        openOverview();
+      } else if (e.key === 't' || e.key === 'T') {
+        toggleTheme();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 'p' || e.key === 'P') {
+        toggleAutoPlay();
+      }
     });
 
     // -------------------------------------------------------------
-    // 3. NETFLIX BANDIT ARTWORK PERSONALIZATION DEMO
+    // SLIDE OVERVIEW GRID (KEY G)
     // -------------------------------------------------------------
-    const personas = {
+    const gridOverlay = document.getElementById('gridOverlay');
+    const overviewGrid = document.getElementById('overviewGrid');
+    const btnOverview = document.getElementById('btnOverview');
+    const btnCloseOverview = document.getElementById('btnCloseOverview');
+
+    function buildOverviewGrid() {
+      overviewGrid.innerHTML = '';
+      slidesData.forEach((s, idx) => {
+        const thumb = document.createElement('div');
+        thumb.className = `grid-thumb ${idx === currentSlide ? 'active' : ''}`;
+        thumb.innerHTML = `
+          <div class="grid-thumb-num">SLIDE ${String(idx + 1).padStart(2, '0')}</div>
+          <div class="grid-thumb-title">${s.title}</div>
+        `;
+        thumb.addEventListener('click', () => {
+          goToSlide(idx);
+          closeOverview();
+        });
+        overviewGrid.appendChild(thumb);
+      });
+    }
+
+    function openOverview() {
+      buildOverviewGrid();
+      gridOverlay.classList.add('active');
+    }
+
+    function closeOverview() {
+      gridOverlay.classList.remove('active');
+    }
+
+    btnOverview.addEventListener('click', openOverview);
+    btnCloseOverview.addEventListener('click', closeOverview);
+
+    // -------------------------------------------------------------
+    // FULLSCREEN & THEME TOGGLE
+    // -------------------------------------------------------------
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+    btnFullscreen.addEventListener('click', toggleFullScreen);
+
+    const btnThemeToggle = document.getElementById('btnThemeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+    function toggleTheme() {
+      const cur = document.body.getAttribute('data-theme') || 'dark';
+      const nxt = cur === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', nxt);
+      themeLabel.textContent = nxt === 'dark' ? 'Light' : 'Dark';
+    }
+    btnThemeToggle.addEventListener('click', toggleTheme);
+
+    // -------------------------------------------------------------
+    // AUTO ADVANCE SLIDES (KEY P)
+    // -------------------------------------------------------------
+    const btnAutoPlay = document.getElementById('btnAutoPlay');
+    const autoPlayText = document.getElementById('autoPlayText');
+    const autoPlayIcon = document.getElementById('autoPlayIcon');
+
+    function toggleAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        btnAutoPlay.classList.remove('active');
+        autoPlayText.textContent = "Auto";
+        autoPlayIcon.innerHTML = "&blacktriangleright;";
+      } else {
+        btnAutoPlay.classList.add('active');
+        autoPlayText.textContent = "Stop";
+        autoPlayIcon.innerHTML = "&block;";
+        autoPlayInterval = setInterval(() => {
+          if (currentSlide < totalSlides - 1) {
+            goToSlide(currentSlide + 1);
+          } else {
+            goToSlide(0);
+          }
+        }, 8000);
+      }
+    }
+    btnAutoPlay.addEventListener('click', toggleAutoPlay);
+
+    // -------------------------------------------------------------
+    // SLIDE 3: ANIMATED MATRIX FACTORIZATION CALCULATION
+    // -------------------------------------------------------------
+    const btnRunMatrixAnim = document.getElementById('btnRunMatrixAnim');
+    const pCell0 = document.getElementById('pCell0');
+    const pCell1 = document.getElementById('pCell1');
+    const pCell2 = document.getElementById('pCell2');
+    const qCell0 = document.getElementById('qCell0');
+    const qCell1 = document.getElementById('qCell1');
+    const qCell2 = document.getElementById('qCell2');
+    const rTargetCell = document.getElementById('rTargetCell');
+    const matrixCalcLog = document.getElementById('matrixCalcLog');
+
+    let matrixAnimStep = 0;
+    btnRunMatrixAnim.addEventListener('click', () => {
+      matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 1: Multiplying Factor 1 &rarr; (0.9 &times; 0.8) = 0.72...</span>`;
+      pCell0.style.outline = "3px solid #ffffff";
+      qCell0.style.outline = "3px solid #ffffff";
+
+      setTimeout(() => {
+        matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 2: Adding Factor 2 &rarr; 0.72 + (0.1 &times; 0.2) = 0.74...</span>`;
+        pCell0.style.outline = "none";
+        qCell0.style.outline = "none";
+        pCell1.style.outline = "3px solid #ffffff";
+        qCell1.style.outline = "3px solid #ffffff";
+      }, 700);
+
+      setTimeout(() => {
+        matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 3: Adding Factor 3 &rarr; 0.74 + (0.7 &times; 0.9) = 1.37...</span>`;
+        pCell1.style.outline = "none";
+        qCell1.style.outline = "none";
+        pCell2.style.outline = "3px solid #ffffff";
+        qCell2.style.outline = "3px solid #ffffff";
+      }, 1400);
+
+      setTimeout(() => {
+        pCell2.style.outline = "none";
+        qCell2.style.outline = "none";
+        rTargetCell.style.transform = "scale(1.3)";
+        matrixCalcLog.innerHTML = `COMPLETE: Latent Dot Product + Global Bias &mu; = <strong>4.75 / 5.0 Rating Predicted!</strong>`;
+        setTimeout(() => { rTargetCell.style.transform = "scale(1.15)"; }, 400);
+      }, 2100);
+    });
+
+    // -------------------------------------------------------------
+    // SLIDE 5: LIVE FUNNEL PARTICLE SIMULATION (CANVAS)
+    // -------------------------------------------------------------
+    let funnelCanvasInitialized = false;
+    function initFunnelAnimation() {
+      if (funnelCanvasInitialized) return;
+      funnelCanvasInitialized = true;
+
+      const canvas = document.getElementById('funnelCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      const particles = [];
+      const numParticles = 75;
+
+      for (let i = 0; i < numParticles; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * (canvas.height * 0.25),
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: Math.random() * 1.5 + 1.0,
+          radius: Math.random() * 2 + 1,
+          alpha: Math.random() * 0.7 + 0.3
+        });
+      }
+
+      function draw() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // Funnel boundary lines in monochrome
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(w * 0.1, 20);
+        ctx.lineTo(w * 0.42, h - 30);
+        ctx.lineTo(w * 0.58, h - 30);
+        ctx.lineTo(w * 0.9, 20);
+        ctx.stroke();
+
+        // Stage dividing dotted lines
+        ctx.setLineDash([4, 4]);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        [0.25, 0.5, 0.75].forEach(pct => {
+          ctx.beginPath();
+          ctx.moveTo(w * 0.15, h * pct);
+          ctx.lineTo(w * 0.85, h * pct);
+          ctx.stroke();
+        });
+        ctx.setLineDash([]);
+
+        // Update & draw particles
+        particles.forEach(p => {
+          p.y += p.vy;
+          p.x += p.vx;
+
+          // Funnel squeeze geometry
+          const progress = p.y / h;
+          const currentWidth = (1 - progress * 0.75) * (w * 0.4);
+          const minX = w * 0.5 - currentWidth;
+          const maxX = w * 0.5 + currentWidth;
+
+          if (p.x < minX) p.x = minX + 2;
+          if (p.x > maxX) p.x = maxX - 2;
+
+          // Prune particles at lower stages to show funnel reduction
+          if (progress > 0.4 && p.alpha > 0.6) p.alpha -= 0.01;
+          if (progress > 0.75 && p.radius > 1.5) p.radius -= 0.02;
+
+          if (p.y > h - 20) {
+            // Reset to top
+            p.y = 10;
+            p.x = w * 0.5 + (Math.random() - 0.5) * (w * 0.7);
+            p.radius = Math.random() * 2 + 1;
+            p.alpha = Math.random() * 0.8 + 0.2;
+          }
+
+          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    // -------------------------------------------------------------
+    // SLIDE 7: NETFLIX ARTWORK BANDIT PERSONA CONTROLLER
+    // -------------------------------------------------------------
+    const banditPersonas = {
       action: {
         title: "PULP FICTION",
-        variant: "ARM 01: Gun Duel & High-Stakes Confrontation",
-        explanation: "Subscriber context features indicate 82% completion of high-octane thrillers. The LinUCB algorithm selects the weapon duel variant as the highest expected engagement arm.",
-        ctr: "21.6% (+8.2% vs baseline)",
-        ctrWidth: "85%",
-        conf: "0.965 (Exploiting)",
-        confWidth: "96%",
-        svgContent: `
+        label: "Arm 01: Gun Duel Standoff (Highest Action Affinity)",
+        ctr: "23.4%",
+        ucb: "0.984",
+        svg: `
           <rect width="320" height="180" fill="#000000"/>
-          <circle cx="160" cy="90" r="65" stroke="#ffffff" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
+          <circle cx="160" cy="90" r="60" stroke="#ffffff" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
           <line x1="80" y1="90" x2="240" y2="90" stroke="#ffffff" stroke-width="2"/>
           <line x1="160" y1="20" x2="160" y2="160" stroke="#ffffff" stroke-width="2"/>
           <polygon points="120,80 140,80 135,110 115,110" fill="#ffffff"/>
           <polygon points="200,80 180,80 185,110 205,110" fill="#ffffff"/>
-          <text x="160" y="145" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="9" letter-spacing="2">[ACTION RETRIEVAL VARIANT]</text>
+          <text x="160" y="145" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ACTION STANDOFF ARM]</text>
         `
       },
       romance: {
         title: "GOOD WILL HUNTING",
-        variant: "ARM 02: Romantic Embrace & Dialogue Scene",
-        explanation: "Subscriber viewing history shows strong preference for romantic dramas. LinUCB shifts arm selection from Robin Williams (mentor/math) to Minnie Driver & Matt Damon (romance).",
-        ctr: "17.9% (+5.3% vs baseline)",
-        ctrWidth: "71%",
-        conf: "0.912 (High Confidence)",
-        confWidth: "91%",
-        svgContent: `
+        label: "Arm 02: Romantic Conversation (High Drama Affinity)",
+        ctr: "19.8%",
+        ucb: "0.932",
+        svg: `
           <rect width="320" height="180" fill="#000000"/>
-          <circle cx="130" cy="80" r="35" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <circle cx="190" cy="80" r="35" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <path d="M110,130 Q160,100 210,130" stroke="#ffffff" stroke-width="3" fill="none"/>
-          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="9" letter-spacing="2">[DRAMA / ROMANCE VARIANT]</text>
+          <circle cx="130" cy="80" r="32" stroke="#ffffff" stroke-width="2" fill="none"/>
+          <circle cx="190" cy="80" r="32" stroke="#ffffff" stroke-width="2" fill="none"/>
+          <path d="M110,130 Q160,105 210,130" stroke="#ffffff" stroke-width="3" fill="none"/>
+          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ROMANCE / DRAMA ARM]</text>
         `
       },
-      cast: {
+      uma: {
         title: "PULP FICTION",
-        variant: "ARM 03: Uma Thurman Iconic Close-Up",
-        explanation: "Member recently streamed Kill Bill and other Uma Thurman works. The contextual bandit identifies high actor-affinity affinity x_u &bull; &theta;_actor, selecting the acclaimed character portrait.",
-        ctr: "24.1% (+11.4% vs baseline)",
-        ctrWidth: "94%",
-        conf: "0.988 (Optimal Convergence)",
-        confWidth: "99%",
-        svgContent: `
+        label: "Arm 03: Uma Thurman Close-Up Portrait (Star Actor Arm)",
+        ctr: "26.1%",
+        ucb: "0.995",
+        svg: `
           <rect width="320" height="180" fill="#000000"/>
-          <ellipse cx="160" cy="80" rx="45" ry="55" stroke="#ffffff" stroke-width="2" fill="none"/>
+          <ellipse cx="160" cy="80" rx="42" ry="52" stroke="#ffffff" stroke-width="2" fill="none"/>
           <line x1="135" y1="75" x2="150" y2="75" stroke="#ffffff" stroke-width="2"/>
           <line x1="170" y1="75" x2="185" y2="75" stroke="#ffffff" stroke-width="2"/>
           <path d="M145,105 Q160,115 175,105" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono', monospace" font-size="9" letter-spacing="2">[ACTOR-AFFINITY VARIANT]</text>
+          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ACTOR-AFFINITY ARM]</text>
         `
       }
     };
 
-    const personaBtns = document.querySelectorAll('.persona-btn');
-    const cardSvgGraphic = document.getElementById('cardSvgGraphic');
-    const cardMovieTitle = document.getElementById('cardMovieTitle');
-    const cardVariantText = document.getElementById('cardVariantText');
-    const banditExplanation = document.getElementById('banditExplanation');
-    const banditCtr = document.getElementById('banditCtr');
-    const barCtr = document.getElementById('barCtr');
-    const banditConf = document.getElementById('banditConf');
-    const barConf = document.getElementById('barConf');
+    function switchBanditPersona(type) {
+      document.querySelectorAll('#btnP1, #btnP2, #btnP3').forEach(b => b.classList.remove('active'));
+      if (type === 'action') document.getElementById('btnP1').classList.add('active');
+      if (type === 'romance') document.getElementById('btnP2').classList.add('active');
+      if (type === 'uma') document.getElementById('btnP3').classList.add('active');
 
-    function setPersona(type) {
-      personaBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-persona') === type));
-      const p = personas[type];
-      cardSvgGraphic.innerHTML = p.svgContent;
-      cardMovieTitle.textContent = p.title;
-      cardVariantText.textContent = p.variant;
-      banditExplanation.textContent = p.explanation;
-      banditCtr.textContent = p.ctr;
-      barCtr.style.width = p.ctrWidth;
-      banditConf.textContent = p.conf;
-      barConf.style.width = p.confWidth;
+      const data = banditPersonas[type];
+      document.getElementById('banditMovieTitle').textContent = data.title;
+      document.getElementById('banditArmLabel').textContent = data.label;
+      document.getElementById('banditCtrVal').textContent = data.ctr;
+      document.getElementById('banditUcbVal').textContent = data.ucb;
+      document.getElementById('banditArtSvg').innerHTML = data.svg;
     }
 
-    personaBtns.forEach(btn => {
-      btn.addEventListener('click', () => {
-        setPersona(btn.getAttribute('data-persona'));
-      });
+    // Interactive Term highlighter
+    const termExploit = document.getElementById('termExploit');
+    const termExplore = document.getElementById('termExplore');
+    termExploit.addEventListener('click', () => {
+      termExploit.classList.add('highlight');
+      termExplore.classList.remove('highlight');
+    });
+    termExplore.addEventListener('click', () => {
+      termExplore.classList.add('highlight');
+      termExploit.classList.remove('highlight');
     });
 
-    // Initialize with action persona
-    setPersona('action');
-
-    // -------------------------------------------------------------
-    // 4. PRESENTATION SLIDE DECK ENGINE
-    // -------------------------------------------------------------
-    const slides = [
-      {
-        counter: "SLIDE 01 / 06",
-        title: "The Core Recommender System Problem",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <p class="card-text" style="font-size: 1.15rem; margin-bottom: 20px;">
-                Given a user <strong>u &isin; U</strong>, an item catalog <strong>I</strong> of scale 10<sup>7</sup>+, and context <strong>c &isin; C</strong> (device, time, location, network):
-              </p>
-              <div class="math-box">
-                ArgMax<sub>S &sube; I, |S|=K</sub> &sum;<sub>i &isin; S</sub> Utility(u, i, c)
-              </div>
-              <p class="card-text">
-                The objective is to compute the top-K recommendations in under 15ms without running exhaustive inference over the full catalog.
-              </p>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// SYSTEM LATENCY BUDGET BREAKDOWN</span>
-              <ul style="list-style:none; font-family: var(--font-mono); font-size: 0.9rem; line-height: 2.2;">
-                <li>&bull; Network &amp; Gateway: <strong>3ms</strong></li>
-                <li>&bull; Candidate Retrieval (ANN): <strong>4ms</strong></li>
-                <li>&bull; Scoring &amp; Reranking (DNN): <strong>6ms</strong></li>
-                <li>&bull; Slate Dedup &amp; Bandit: <strong>2ms</strong></li>
-                <li>&bull; Total P99 Budget: <strong>&le; 15ms</strong></li>
-              </ul>
-            </div>
-          </div>
-        `
-      },
-      {
-        counter: "SLIDE 02 / 06",
-        title: "Multi-Stage Cascade Architecture",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <h3 class="card-title">Why Cascade Funnels are Essential</h3>
-              <p class="card-text">
-                A 100-layer transformer cannot evaluate 10 million items in 10 milliseconds. Production architectures split the workload:
-              </p>
-              <div class="math-box">
-                Catalog (10M) &rarr; Retrieval (1000) &rarr; Scoring (200) &rarr; Rerank (50) &rarr; Slate (10)
-              </div>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// TRADE-OFF CURVE</span>
-              <p class="card-text">
-                &bull; <strong>Stage 1 (Retrieval):</strong> High recall priority. Simple models, massive scale.<br><br>
-                &bull; <strong>Stage 2 (Scoring):</strong> Balanced recall & precision. Contextual features.<br><br>
-                &bull; <strong>Stage 3 (Heavy Ranker):</strong> High precision priority. Cross-features, sequence transformers.
-              </p>
-            </div>
-          </div>
-        `
-      },
-      {
-        counter: "SLIDE 03 / 06",
-        title: "Two-Tower Neural Retrieval & MIPS",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <h3 class="card-title">Decoupled Dual Encoders</h3>
-              <p class="card-text">
-                User features pass through <em>f(u)</em> to create a query vector. Item features pass through <em>g(i)</em> offline to create indexed vectors.
-              </p>
-              <div class="math-box">
-                Score(u, i) = &lang; f(u), g(i) &rang; = &sum;<sub>d</sub> f<sub>d</sub>(u) &times; g<sub>d</sub>(i)
-              </div>
-              <p class="card-text">
-                Maximum Inner Product Search (MIPS) searches millions of vectors in logarithmic time using HNSW graph indices.
-              </p>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// INDUSTRIAL VECTOR INDICES</span>
-              <ul style="list-style:none; font-family: var(--font-mono); font-size: 0.9rem; line-height: 2.2;">
-                <li>&bull; <strong>HNSW:</strong> Hierarchical Navigable Small World graphs.</li>
-                <li>&bull; <strong>ScaNN:</strong> Anisotropic vector quantization (Google).</li>
-                <li>&bull; <strong>FAISS:</strong> Facebook AI Similarity Search.</li>
-              </ul>
-            </div>
-          </div>
-        `
-      },
-      {
-        counter: "SLIDE 04 / 06",
-        title: "Netflix Walkthrough: The 2D Matrix Homepage",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <h3 class="card-title">Homepage = Rows &times; Columns</h3>
-              <p class="card-text">
-                Instead of a single list, Netflix organizes recommendations into specialized conceptual rows (e.g., "Trending Now", "Continue Watching", "Because You Watched X").
-              </p>
-              <div class="math-box">
-                Page = Ordered_Set(Row<sub>1</sub>, Row<sub>2</sub>, ..., Row<sub>R</sub>)
-              </div>
-              <p class="card-text">
-                Each row has its own dedicated candidate generation and scoring model. The overall page ranking algorithm then decides which rows to display and in what vertical order.
-              </p>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// DIVERSITY AND COLD START</span>
-              <p class="card-text">
-                Rows are penalized if they contain excessive overlap with preceding rows. This guarantees that if a user dislikes Sci-Fi, subsequent rows immediately surface alternative genres (Crime, Comedy, Documentary).
-              </p>
-            </div>
-          </div>
-        `
-      },
-      {
-        counter: "SLIDE 05 / 06",
-        title: "Netflix Dynamic Artwork: Contextual Bandits",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <h3 class="card-title">The Artwork Personalization Problem</h3>
-              <p class="card-text">
-                A single title has dozens of candidate thumbnail posters. Netflix uses <strong>Contextual Multi-Armed Bandits (LinUCB)</strong> to select the poster that maximizes member play conversion.
-              </p>
-              <div class="math-box">
-                Arm a<sup>*</sup> = ArgMax<sub>a</sub> [ &theta;<sub>a</sub><sup>T</sup> x<sub>u</sub> + &alpha; &radic;( x<sub>u</sub><sup>T</sup> A<sub>a</sub><sup>-1</sup> x<sub>u</sub> ) ]
-              </div>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// EXPLORATION VS EXPLOITATION</span>
-              <p class="card-text">
-                &bull; <strong>&theta;<sub>a</sub><sup>T</sup> x<sub>u</sub>:</strong> Exploitation &mdash; predicted engagement based on member preferences.<br><br>
-                &bull; <strong>&alpha;&radic;(...):</strong> Exploration bonus &mdash; tests new artwork on members to gather ground-truth reward data.
-              </p>
-            </div>
-          </div>
-        `
-      },
-      {
-        counter: "SLIDE 06 / 06",
-        title: "Production Metrics & Pitfalls",
-        html: `
-          <div class="slide-content-grid">
-            <div>
-              <h3 class="card-title">Offline Accuracy &ne; Business Value</h3>
-              <p class="card-text">
-                A model can have 99% NDCG offline yet destroy business revenue if it only recommends titles users were already going to watch anyway.
-              </p>
-              <div class="math-box">
-                Business Incrementality = P(Watch | Recommended) - P(Watch | Organic)
-              </div>
-            </div>
-            <div class="card-mono">
-              <span class="card-tag">// CRITICAL LESSONS</span>
-              <ul style="list-style:none; font-family: var(--font-mono); font-size: 0.9rem; line-height: 2.2;">
-                <li>&bull; Always correct for <strong>Position Bias</strong> using Inverse Propensity Scoring.</li>
-                <li>&bull; Optimize for <strong>Long-Term Retention</strong> (Day 28), not just immediate click-through rate.</li>
-                <li>&bull; Implement strict fallbacks (static high-entropy grids) if inference latency spikes over 25ms.</li>
-              </ul>
-            </div>
-          </div>
-        `
-      }
-    ];
-
-    let currentSlide = 0;
-    const slideDeckCounter = document.getElementById('slideDeckCounter');
-    const slideContent = document.getElementById('slideContent');
-    const prevSlideBtn = document.getElementById('prevSlideBtn');
-    const nextSlideBtn = document.getElementById('nextSlideBtn');
-
-    function renderSlide(index) {
-      if (index < 0) index = 0;
-      if (index >= slides.length) index = slides.length - 1;
-      currentSlide = index;
-
-      const s = slides[currentSlide];
-      slideDeckCounter.textContent = s.counter;
-      slideContent.innerHTML = `
-        <h2 class="slide-title">${s.title}</h2>
-        ${s.html}
-      `;
-
-      prevSlideBtn.style.opacity = currentSlide === 0 ? "0.3" : "1";
-      nextSlideBtn.style.opacity = currentSlide === slides.length - 1 ? "0.3" : "1";
-    }
-
-    prevSlideBtn.addEventListener('click', () => renderSlide(currentSlide - 1));
-    nextSlideBtn.addEventListener('click', () => renderSlide(currentSlide + 1));
-
-    // -------------------------------------------------------------
-    // 5. VIEW MODE (DOC VS DECK) & THEME TOGGLE
-    // -------------------------------------------------------------
-    const toggleViewBtn = document.getElementById('toggleViewBtn');
-    const viewModeText = document.getElementById('viewModeText');
-    const docView = document.getElementById('docView');
-    const deckView = document.getElementById('deckView');
-
-    let isDeckMode = false;
-
-    function toggleViewMode() {
-      isDeckMode = !isDeckMode;
-      document.body.classList.toggle('deck-mode', isDeckMode);
-      viewModeText.textContent = isDeckMode ? "Doc View" : "Deck View";
-      toggleViewBtn.classList.toggle('active', isDeckMode);
-
-      if (isDeckMode) {
-        renderSlide(currentSlide);
-      }
-    }
-
-    toggleViewBtn.addEventListener('click', toggleViewMode);
-
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeText = document.getElementById('themeText');
-
-    function toggleTheme() {
-      const current = document.body.getAttribute('data-theme') || 'dark';
-      const next = current === 'dark' ? 'light' : 'dark';
-      document.body.setAttribute('data-theme', next);
-      themeText.textContent = next === 'dark' ? 'Light' : 'Dark';
-    }
-
-    themeToggleBtn.addEventListener('click', toggleTheme);
-
-    // Keyboard Shortcuts (D for Deck, T for Theme, Arrows for Slides)
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'd' || e.key === 'D') {
-        toggleViewMode();
-      } else if (e.key === 't' || e.key === 'T') {
-        toggleTheme();
-      } else if (isDeckMode) {
-        if (e.key === 'ArrowRight' || e.key === ' ') {
-          renderSlide(currentSlide + 1);
-        } else if (e.key === 'ArrowLeft') {
-          renderSlide(currentSlide - 1);
-        }
-      }
-    });
-
-    // Initialize first funnel stage and dot product
-    selectFunnelStage(0);
-    updateDotProduct();
+    // Initialize Default Slide 0 and Default Persona
+    goToSlide(0);
+    switchBanditPersona('action');
   </script>
 </body>
 </html>

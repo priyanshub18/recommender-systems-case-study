@@ -1,31 +1,29 @@
-# Architecture of Modern Production Recommender Systems — Netflix Case Study
+# Recommender Systems Architecture — Interactive Presentation (PPT)
 
-A high-performance, strictly monochromatic engineering presentation and whitepaper detailing how modern machine learning recommender systems operate at massive scale (100M+ items down to 10 sub-millisecond personalized recommendations).
+A high-performance, strictly monochromatic PowerPoint-style presentation and interactive case study on production Recommender Systems, their mathematical formulations, and Netflix's algorithmic engine.
 
-## Key Content & Topics Covered
-1. **The Multi-Stage Retrieval Funnel**:
-   - Stage 1: Candidate Retrieval (10M &rarr; 1,000 items, &lt;5ms) using Two-Tower DNNs and Vector ANN (FAISS/ScaNN).
-   - Stage 2: First-Stage Scoring (1,000 &rarr; 200 items, &lt;15ms) using DCN / LightGBM.
-   - Stage 3: Heavy Multi-Task Reranking (200 &rarr; 50 items, &lt;30ms) using Sequence Transformers (BST / MMoE).
-   - Stage 4: Page Slate, Diversity & Dedup (50 &rarr; 10-20 items, &lt;10ms) using Determinantal Point Processes (DPP).
-2. **Mathematical Formulations & Interactive Models**:
-   - Latent Matrix Factorization ($R \approx P \times Q^T$).
-   - Interactive 3D vector embedding dot-product simulator.
-   - Two-Tower Dual Encoders & Maximum Inner Product Search (MIPS).
-3. **Netflix Production Case Study**:
-   - 2D Page Generation: optimizing vertical row order and horizontal video rank simultaneously.
-   - Dynamic Artwork Personalization: Contextual Multi-Armed Bandits (LinUCB / Thompson Sampling) that dynamically select thumbnail posters based on user viewing preferences.
-   - Interactive Persona Switcher demonstrating real-time bandit arm selection and confidence bounds.
-4. **Offline vs. Online Evaluation & Position Bias**:
-   - Offline metrics: NDCG@K, Recall@K, MRR, Intra-list diversity.
-   - Online metrics: Session Take-rate, Median time to play, Day-28 retention, and Inverse Propensity Scoring (IPS).
+## 📽️ PPT Features & Mathematical Animations
+1. **Interactive Animated Matrix Factorization ($R \approx P \times Q^T$)**:
+   - Live step-by-step dot product calculation: sweeps across User latent row $u$ and Item column $i$, calculating intermediate factor products before updating the predicted rating.
+2. **Two-Tower Neural Retrieval & MIPS**:
+   - Dual-encoder architecture diagram (User Tower $f_\theta(u)$ & Item Tower $g_\phi(i)$).
+   - Dynamic vector space angle and cosine similarity calculator.
+3. **Animated 4-Stage Candidate Funnel**:
+   - Live HTML5 Canvas particle simulation visualizing candidate pruning from 10,000,000 catalog items down to 10 page recommendations.
+4. **Netflix Production Walkthrough**:
+   - 2D Page Generation: optimizing vertical row composition and horizontal title rankings simultaneously.
+   - Dynamic Artwork Personalization with **LinUCB Contextual Bandits**:
+     - Live interactive formula breakdown separating the **Exploitation** payoff ($\theta_a^T x_u$) from the **Exploration** uncertainty ellipsoid ($\alpha \sqrt{x_u^T A_a^{-1} x_u}$).
+     - Real-time subscriber persona switcher (Action fan, Romance fan, Star actor fan) showing dynamic artwork transformation and confidence bounds.
+5. **Position Bias & Inverse Propensity Scoring (IPS)**:
+   - Mathematical correction formula for logged observational feedback and rank examination probabilities.
+6. **Production Serving Blueprint**:
+   - End-to-end data pipeline: Kafka $\to$ Flink $\to$ Redis/Cassandra Feature Store $\to$ Envoy gRPC sub-15ms serving.
 
-## Design System
-- **Strict Monochromatic Palette**: High-contrast pure black, pure white, and neutral technical grays.
-- **Dual Presentation Modes**:
-  - Full-length Whitepaper / Document mode.
-  - Interactive Slide Deck mode (press `D` or click "Deck View").
-- **Keyboard Shortcuts**:
-  - `D`: Toggle Deck / Doc view.
-  - `T`: Toggle Dark / Light monochrome theme.
-  - `←` / `→`: Navigate presentation slides.
+## ⌨️ Presentation Controls
+- `→` / `Space` / `PageDown`: Next slide
+- `←` / `PageUp`: Previous slide
+- `G`: Slide Overview Grid (jump to any slide)
+- `F`: Toggle Fullscreen Presentation Mode
+- `P`: Toggle Auto-Advance Slides
+- `T`: Toggle Monochrome Theme (Pitch Black vs Studio White)
