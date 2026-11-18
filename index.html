@@ -1,1859 +1,883 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Recommender Systems Architecture — PPT Presentation</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    /* -------------------------------------------------------------
-       STRICT MONOCHROME PRESENTATION SYSTEM (PPT / KEYNOTE STYLE)
-       ONLY PURE BLACK, PURE WHITE, AND TECHNICAL GRAYS.
-    -------------------------------------------------------------- */
-    :root {
-      --bg: #000000;
-      --bg-panel: #0d0d0d;
-      --bg-card: #141414;
-      --bg-hover: #222222;
-      --border: #262626;
-      --border-bright: #525252;
-      
-      --text: #ffffff;
-      --text-dim: #999999;
-      --text-muted: #555555;
-      --text-inv: #000000;
-      
-      --accent: #ffffff;
-      --accent-inv: #000000;
-
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: 'Geist Mono', ui-monospace, Menlo, monospace;
-      
-      --slide-ratio: 16 / 9;
-      --transition-slide: 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    [data-theme="light"] {
-      --bg: #ffffff;
-      --bg-panel: #f5f5f5;
-      --bg-card: #ebebeb;
-      --bg-hover: #e0e0e0;
-      --border: #d4d4d4;
-      --border-bright: #888888;
-      
-      --text: #000000;
-      --text-dim: #555555;
-      --text-muted: #999999;
-      --text-inv: #ffffff;
-      
-      --accent: #000000;
-      --accent-inv: #ffffff;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-
-    html, body {
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-      background-color: var(--bg);
-      color: var(--text);
-      font-family: var(--font-sans);
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Ambient Matrix Grid */
-    .bg-grid {
-      position: fixed;
-      inset: 0;
-      background-image: radial-gradient(var(--border) 1px, transparent 1px);
-      background-size: 28px 28px;
-      opacity: 0.45;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* Presentation Header Toolbar */
-    .ppt-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 52px;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-    }
-
-    [data-theme="light"] .ppt-header {
-      background: rgba(255, 255, 255, 0.88);
-    }
-
-    .ppt-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-    }
-
-    .ppt-brand-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      background: var(--text);
-      color: var(--text-inv);
-      font-weight: 900;
-      font-size: 0.75rem;
-      border-radius: 3px;
-    }
-
-    .ppt-deck-title {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .ppt-controls {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-ppt {
-      background: transparent;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 5px 12px;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      border-radius: 4px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .btn-ppt:hover {
-      background: var(--text);
-      color: var(--text-inv);
-      border-color: var(--text);
-    }
-
-    .btn-ppt.active {
-      background: var(--text);
-      color: var(--text-inv);
-      border-color: var(--text);
-    }
-
-    /* Main Presentation Stage */
-    .ppt-stage {
-      position: absolute;
-      top: 52px;
-      bottom: 46px;
-      left: 0;
-      right: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-      z-index: 10;
-    }
-
-    /* 16:9 Slide Canvas */
-    .slide-canvas {
-      width: 100%;
-      max-width: 1360px;
-      height: 100%;
-      max-height: 765px;
-      aspect-ratio: 16 / 9;
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* Slide Inner Container & Transition */
-    .slide-viewport {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .slide {
-      position: absolute;
-      inset: 0;
-      padding: 40px 48px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      opacity: 0;
-      pointer-events: none;
-      transform: translateX(40px) scale(0.98);
-      transition: opacity var(--transition-slide), transform var(--transition-slide);
-    }
-
-    .slide.active {
-      opacity: 1;
-      pointer-events: auto;
-      transform: translateX(0) scale(1);
-      z-index: 5;
-    }
-
-    .slide.prev-slide {
-      transform: translateX(-40px) scale(0.98);
-    }
-
-    /* Slide Header */
-    .slide-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 20px;
-    }
-
-    .slide-meta-tag {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      letter-spacing: 2px;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-    }
-
-    .slide-meta-tag::before {
-      content: "";
-      width: 6px;
-      height: 6px;
-      background: var(--text);
-      display: inline-block;
-      border-radius: 1px;
-    }
-
-    .slide-title {
-      font-size: clamp(1.8rem, 2.8vw, 2.6rem);
-      font-weight: 900;
-      letter-spacing: -1.2px;
-      line-height: 1.1;
-      color: var(--text);
-    }
-
-    .slide-subtitle {
-      font-size: 0.95rem;
-      color: var(--text-dim);
-      margin-top: 4px;
-      max-width: 820px;
-      line-height: 1.4;
-    }
-
-    .slide-chip {
-      font-family: var(--font-mono);
-      font-size: 0.7rem;
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 4px;
-      color: var(--text-dim);
-      background: var(--bg-card);
-      white-space: nowrap;
-    }
-
-    /* Slide Content Layouts */
-    .slide-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      min-height: 0;
-    }
-
-    .split-2col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 28px;
-      align-items: center;
-      height: 100%;
-    }
-
-    .split-3col {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      align-items: stretch;
-    }
-
-    /* Monochrome Card Box */
-    .card-mono {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 22px 26px;
-      position: relative;
-    }
-
-    .card-mono-title {
-      font-size: 1.1rem;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-mono-desc {
-      font-size: 0.85rem;
-      color: var(--text-dim);
-      line-height: 1.5;
-    }
-
-    /* Mathematical Box with Animated Highlights */
-    .formula-display {
-      background: #000000;
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--text);
-      padding: 16px 20px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-size: 1rem;
-      letter-spacing: 0.5px;
-      margin: 14px 0;
-      color: #ffffff;
-      overflow-x: auto;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-
-    [data-theme="light"] .formula-display {
-      background: #f0f0f0;
-      color: #000000;
-    }
-
-    .math-term {
-      padding: 2px 6px;
-      border-radius: 3px;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      display: inline-block;
-    }
-
-    .math-term:hover, .math-term.highlight {
-      background: #ffffff;
-      color: #000000;
-      box-shadow: 0 0 12px rgba(255, 255, 255, 0.4);
-    }
-
-    [data-theme="light"] .math-term:hover, [data-theme="light"] .math-term.highlight {
-      background: #000000;
-      color: #ffffff;
-    }
-
-    /* Interactive Matrix Factorization Animation Grid */
-    .matrix-stage {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin-top: 10px;
-      font-family: var(--font-mono);
-    }
-
-    .matrix-box {
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      border-radius: 4px;
-      padding: 12px;
-      text-align: center;
-    }
-
-    .matrix-grid {
-      display: grid;
-      gap: 4px;
-      margin-top: 8px;
-    }
-
-    .m-cell {
-      width: 44px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--border);
-      font-size: 0.75rem;
-      background: var(--bg-panel);
-      transition: all 0.3s ease;
-    }
-
-    .m-cell.active-row {
-      background: #ffffff;
-      color: #000000;
-      border-color: #ffffff;
-      font-weight: 700;
-    }
-
-    .m-cell.active-col {
-      background: #ffffff;
-      color: #000000;
-      border-color: #ffffff;
-      font-weight: 700;
-    }
-
-    .m-cell.target-cell {
-      background: #ffffff;
-      color: #000000;
-      border: 2px solid #ffffff;
-      font-weight: 900;
-      transform: scale(1.15);
-      z-index: 10;
-    }
-
-    /* Two-Tower Interactive Vector Radar */
-    .tower-diagram {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 20px;
-    }
-
-    .tower-box {
-      flex: 1;
-      border: 1px solid var(--border);
-      background: var(--bg-card);
-      border-radius: 6px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .tower-layer {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
-      padding: 8px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      margin-top: 6px;
-      transition: all 0.3s ease;
-    }
-
-    .tower-layer.pulse {
-      background: #ffffff;
-      color: #000000;
-      font-weight: 700;
-    }
-
-    /* Funnel Stage Canvas Animation */
-    .funnel-canvas-wrapper {
-      position: relative;
-      width: 100%;
-      height: 340px;
-      border: 1px solid var(--border);
-      background: #000000;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    canvas#funnelCanvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-
-    /* LinUCB Artwork Bandit Interactive Stage */
-    .bandit-container {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 24px;
-      align-items: center;
-    }
-
-    .artwork-art-box {
-      aspect-ratio: 16 / 9;
-      background: #000000;
-      border: 2px solid var(--text);
-      border-radius: 6px;
-      position: relative;
-      overflow: hidden;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .art-svg-bg {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-    }
-
-    /* Bottom PPT Footer Bar */
-    .ppt-footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 46px;
-      padding: 0 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-top: 1px solid var(--border);
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(12px);
-      z-index: 100;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-    }
-
-    [data-theme="light"] .ppt-footer {
-      background: rgba(255, 255, 255, 0.88);
-    }
-
-    .slide-progress-bar {
-      position: absolute;
-      top: -1px;
-      left: 0;
-      height: 2px;
-      background: var(--text);
-      transition: width 0.3s ease;
-    }
-
-    .nav-arrow-btn {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-      width: 32px;
-      height: 30px;
-      border-radius: 4px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-family: var(--font-mono);
-      transition: all 0.2s ease;
-    }
-
-    .nav-arrow-btn:hover {
-      background: var(--text);
-      color: var(--text-inv);
-      border-color: var(--text);
-    }
-
-    .nav-arrow-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-
-    /* Grid Slide Overview Overlay (Key G) */
-    .grid-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.94);
-      backdrop-filter: blur(20px);
-      z-index: 200;
-      display: none;
-      padding: 60px 40px;
-      overflow-y: auto;
-    }
-
-    .grid-overlay.active {
-      display: block;
-    }
-
-    .overview-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 20px;
-      max-width: 1280px;
-      margin: 0 auto;
-    }
-
-    .grid-thumb {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 16px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .grid-thumb:hover, .grid-thumb.active {
-      border-color: var(--text);
-      transform: translateY(-3px);
-      box-shadow: 0 10px 30px rgba(255, 255, 255, 0.1);
-    }
-
-    .grid-thumb-num {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      margin-bottom: 6px;
-    }
-
-    .grid-thumb-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      line-height: 1.3;
-    }
-
-    /* Keyboard shortcut helper pill */
-    .kbd {
-      display: inline-block;
-      padding: 2px 5px;
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      font-size: 0.7rem;
-      background: var(--bg-card);
-      color: var(--text-dim);
-      margin: 0 2px;
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>Netflix Recommender Architecture: A Graph Theory Walkthrough</title>
+<style>
+:root{
+  --page:#0c0d12; --bg2:#14161f; --panel:#171924; --panel2:#1f2233; --line:#2b2f44; --line2:#3c4260;
+  --text:#f0f2f8; --muted:#8f96af; --dim:#5f6680;
+  --red:#e50914; --red-soft:#2a1114; --red-line:#661a20;
+  --accent:#6366f1; --accent-soft:#181938; --accent-line:#383b7a;
+  --green:#10b981; --green-soft:#0d261e; --green-line:#1b5442;
+  --amber:#f59e0b; --amber-soft:#291e0a; --amber-line:#614413;
+  --violet:#a855f7; --violet-soft:#25123d; --violet-line:#58288f;
+  --cyan:#06b6d4; --cyan-soft:#08242d; --cyan-line:#135266;
+  --shadow:0 4px 20px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--page);color:var(--text);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+button,select{font:inherit;color:inherit}
+.mono,pre,kbd{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+
+/* Chrome / Layout */
+header{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 24px;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--line)}
+header .brand{color:var(--text);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+header .brand::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--red);box-shadow:0 0 10px rgba(229,9,20,.6)}
+header .brand span{color:var(--dim);font-weight:500;font-size:12px}
+#chap{flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-weight:500}
+#chap b{color:var(--text);font-weight:600}
+
+#viewport{flex:1;position:relative;overflow:hidden;min-height:120px;cursor:pointer;background:radial-gradient(circle at 50% 50%,#131622 0%,#090a0f 100%)}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;background:var(--panel);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05)}
+#stage::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--red),var(--accent),var(--cyan));opacity:.9;z-index:10}
+
+footer{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 24px 8px;border-top:1px solid var(--line);background:var(--page);transition:opacity .25s}
+body.clean header,body.clean footer{opacity:0;pointer-events:none}
+body.clean header:hover,body.clean footer:hover{opacity:1;pointer-events:auto}
+
+.btn{background:var(--panel);border:1px solid var(--line2);border-radius:9px;height:36px;min-width:38px;padding:0 12px;cursor:pointer;white-space:nowrap;color:var(--text);box-shadow:var(--shadow);font-size:13.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
+.btn:hover{border-color:var(--red);color:#fff;background:var(--panel2)}
+.btn.on{border-color:var(--red);color:#fff;background:var(--red-soft)}
+.btn svg{width:16px;height:16px;fill:currentColor}
+
+#prog{flex:1;display:flex;gap:4px;align-items:center;min-width:60px}
+#prog .seg{flex:var(--n);height:5px;border-radius:99px;background:var(--line);position:relative;overflow:hidden;cursor:pointer;transition:background .2s}
+#prog .seg:hover{background:var(--line2)}
+#prog .seg i{position:absolute;left:0;top:0;bottom:0;background:var(--red);border-radius:99px;transition:width .3s ease;box-shadow:0 0 6px rgba(229,9,20,.6)}
+#count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;white-space:nowrap;min-width:64px;text-align:right}
+
+#menu{position:fixed;right:24px;bottom:66px;width:min(420px,calc(100vw - 32px));max-height:75vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:8px;z-index:50;box-shadow:0 24px 60px rgba(0,0,0,.8)}
+#menu button{display:flex;width:100%;gap:12px;text-align:left;background:none;border:0;padding:10px 12px;border-radius:7px;cursor:pointer;color:var(--text);font-size:13.5px;transition:background .15s}
+#menu button:hover{background:var(--panel2)}
+#menu button.cur{background:var(--red-soft);color:var(--red);font-weight:600;border:1px solid var(--red-line)}
+#menu span{color:var(--dim);font-variant-numeric:tabular-nums;min-width:24px;font-weight:600}
+
+#notes{position:fixed;left:24px;bottom:66px;width:min(580px,calc(100vw - 48px));background:#0b0c13f0;backdrop-filter:blur(12px);color:#e2e5f0;border:1px solid var(--line2);border-radius:12px;padding:16px 18px;font-size:14.5px;line-height:1.6;z-index:40;box-shadow:0 20px 50px rgba(0,0,0,.8)}
+#notes small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:700}
+#notes b{color:#fff}
+
+#help{position:fixed;right:24px;bottom:66px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--muted);line-height:2.2;z-index:55;box-shadow:0 20px 50px rgba(0,0,0,.8)}
+kbd{background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:2px 7px;font-size:11.5px;color:var(--text);font-family:"JetBrains Mono",monospace}
+
+/* Stage Primitives */
+.abs{position:absolute}
+.fx{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .65s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .4s,background .4s,filter .4s,color .4s}
+.fx.l{transform:translateX(-26px)} .fx.r{transform:translateX(26px)} .fx.p{transform:scale(.86)} .fx.d{transform:translateY(-14px)}
+.fx.in{opacity:1;transform:none}
+.gone{opacity:0!important;transform:scale(.95)!important;pointer-events:none}
+.dim{opacity:.25!important;filter:grayscale(.7)}
+.instant,.instant *{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}
+
+.stitle{font-size:27px;font-weight:700;letter-spacing:-.025em;color:var(--text);z-index:5}
+.stitle small{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:6px}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
+.card.alt{background:var(--bg2)}
+.card h4{margin:0 0 10px;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font-size:13px;margin:3px;color:var(--text)}
+.chip.red{border-color:var(--red-line);color:#ff858d;background:var(--red-soft)}
+.chip.accent{border-color:var(--accent-line);color:#a5b4fc;background:var(--accent-soft)}
+.chip.violet{border-color:var(--violet-line);color:#d8b4fe;background:var(--violet-soft)}
+.chip.amber{border-color:var(--amber-line);color:#fcd34d;background:var(--amber-soft)}
+.chip.green{border-color:var(--green-line);color:#6ee7b7;background:var(--green-soft)}
+.chip.cyan{border-color:var(--cyan-line);color:#67e8f9;background:var(--cyan-soft)}
+
+.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:5px;text-transform:uppercase}
+.badge.red{background:var(--red-soft);color:#ff757f;border:1px solid var(--red-line)}
+.badge.accent{background:var(--accent-soft);color:#a5b4fc;border:1px solid var(--accent-line)}
+.badge.green{background:var(--green-soft);color:#6ee7b7;border:1px solid var(--green-line)}
+.badge.amber{background:var(--amber-soft);color:#fcd34d;border:1px solid var(--amber-line)}
+
+/* SVG Wires */
+svg.wires{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none;z-index:2}
+.wire{fill:none;stroke:#32374e;stroke-width:2;stroke-dasharray:6 6;opacity:0;transition:opacity .6s,stroke .4s,stroke-width .4s}
+.wire.in{opacity:1;animation:dash 1.6s linear infinite}
+.wire.red{stroke:var(--red);stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(229,9,20,.6))}
+.wire.accent{stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(99,102,241,.6))}
+.wire.green{stroke:var(--green);stroke-width:2.5}
+.wire.solid{stroke-dasharray:none;animation:none}
+@keyframes dash{to{stroke-dashoffset:-24}}
+
+/* Hero & Pills */
+.hero{text-align:center;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
+.h1{font-size:52px;font-weight:800;letter-spacing:-.035em;line-height:1.15;color:#fff}
+.h1 em{font-style:normal;color:var(--red);text-shadow:0 0 30px rgba(229,9,20,.5)}
+.sub{font-size:19px;color:var(--muted);margin-top:14px}
+.pill{display:flex;align-items:center;gap:18px;font-size:20px;padding:15px 24px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--text)}
+.pill .pi{font:700 12px "JetBrains Mono",monospace;letter-spacing:.12em;padding:6px 11px;border-radius:6px;min-width:85px;text-align:center}
+.pill b{color:var(--c);font-weight:700}
+.pcard{border-radius:12px;border:1px solid var(--line);background:var(--panel);padding:18px 20px}
+.pcard .n{font:700 12.5px "JetBrains Mono",monospace;color:var(--red);margin-bottom:8px}
+.pcard h3{margin:0 0 8px;font-size:18px;font-weight:700;color:#fff}
+.pcard p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
+
+/* Graph Node Components */
+.gnode{border-radius:10px;background:var(--bg2);border:1px solid var(--line);padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .3s}
+.gnode:hover,.gnode.act{border-color:var(--red);box-shadow:0 0 15px rgba(229,9,20,.3);transform:scale(1.03)}
+.gnode .avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 13px "JetBrains Mono",monospace;flex:none}
+.gnode .info{flex:1;min-width:0}
+.gnode .name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gnode .subtxt{font-size:11.5px;color:var(--muted);margin-top:2px}
+
+.mnode{border-radius:10px;background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--c);padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:all .3s}
+.mnode:hover,.mnode.act{border-color:var(--c);box-shadow:0 0 15px color-mix(in srgb,var(--c) 40%,transparent);transform:scale(1.03)}
+.mnode .post{width:38px;height:48px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+.mnode .title{font-size:14px;font-weight:700;color:#fff}
+.mnode .tags{display:flex;gap:4px;margin-top:3px;font-size:11px;color:var(--dim)}
+
+/* Formula display */
+.formula-box{background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;padding:16px 20px;font:500 15px/1.6 "JetBrains Mono",monospace;color:#e2e5f0}
+.formula-box b{color:var(--red)}
+
+/* Bar Chart */
+.brow{display:flex;align-items:center;height:34px;margin-bottom:8px}
+.brow .lab{width:210px;font-size:13.5px;font-weight:600;text-align:right;padding-right:14px;color:#d5d8e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brow .bar-wrap{flex:1;height:20px;background:var(--bg2);border-radius:5px;overflow:hidden;position:relative}
+.brow .bar{height:100%;border-radius:5px;background:var(--accent);width:0;transition:width 1.1s cubic-bezier(.2,.8,.2,1),background .4s;box-shadow:0 0 10px rgba(99,102,241,.4)}
+.brow .val{width:80px;padding-left:12px;font:700 13px "JetBrains Mono",monospace;color:#fff}
+.brow.top .bar{background:var(--red);box-shadow:0 0 12px rgba(229,9,20,.6)}
+
+/* Matrix representation */
+.matrix{display:inline-grid;gap:4px;padding:10px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;font:600 12px "JetBrains Mono",monospace}
+.matrix .cell{width:34px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--panel);border-radius:4px;color:var(--muted);transition:all .3s}
+.matrix .cell.hi{background:var(--red-soft);color:var(--red);border:1px solid var(--red-line);box-shadow:0 0 8px rgba(229,9,20,.4)}
+.matrix .cell.zero{color:var(--dim);opacity:.4}
+
+/* Dot Canvas for Random Walk */
+canvas.walk-canvas{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none;z-index:3}
+</style>
 </head>
-<body data-theme="dark">
+<body>
 
-  <div class="bg-grid"></div>
+<header>
+  <div class="brand">NETFLIX GRAPH SYSTEM <span>TOPOLOGICAL ENGINE</span></div>
+  <div id="chap"><b>01</b> &nbsp;The Graph Problem</div>
+</header>
 
-  <!-- PPT Header -->
-  <header class="ppt-header">
-    <div class="ppt-brand">
-      <span class="ppt-brand-badge">R</span>
-      <span>RECSYS.SYS // PRODUCTION SLIDE DECK</span>
+<div id="viewport">
+  <div id="stage"></div>
+</div>
+
+<footer>
+  <button class="btn" id="bPrev" title="Previous (Left Arrow)"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg><span class="t">Prev</span></button>
+  <button class="btn" id="bNext" title="Next (Space / Right Arrow)"><span class="t">Next</span><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
+  
+  <div id="prog"></div>
+  <div id="count">1 / 11</div>
+  
+  <button class="btn" id="bMenu" title="Menu (M)"><span>Menu</span></button>
+  <button class="btn on" id="bNotes" title="Presenter Notes (N)"><span>Notes</span></button>
+  <button class="btn" id="bHelp" title="Shortcuts (?)"><span>?</span></button>
+</footer>
+
+<div id="menu" hidden></div>
+<div id="notes"></div>
+<div id="help" hidden>
+  <div style="font-weight:700;margin-bottom:6px;color:#fff">Keyboard Controls</div>
+  <div><kbd>Space</kbd> / <kbd>&rarr;</kbd> : Next step</div>
+  <div><kbd>&larr;</kbd> : Previous step</div>
+  <div><kbd>]</kbd> / <kbd>[</kbd> : Jump to next / prev chapter</div>
+  <div><kbd>M</kbd> : Toggle chapter menu</div>
+  <div><kbd>N</kbd> : Toggle presenter speech notes</div>
+  <div><kbd>F</kbd> : Toggle fullscreen mode</div>
+  <div><kbd>H</kbd> : Toggle clean minimalist view</div>
+  <div><kbd>Esc</kbd> : Close all modals</div>
+</div>
+
+<script>
+const stage=document.getElementById("stage");
+let INSTANT=false,GEN=0;
+function mk(tag,cls,html,css){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;if(css)e.style.cssText=css;return e}
+function put(p,cls,html,x,y,w,h,css=""){return p.appendChild(mk("div","abs "+(cls||""),html,`left:${x}px;top:${y}px;`+(w?`width:${w}px;`:"")+(h?`height:${h}px;`:"")+css))}
+function show(...a){a.flat().forEach(e=>e&&e.classList.add("in"))}
+function hide(...a){a.flat().forEach(e=>e&&e.classList.add("gone"))}
+function stag(list,step=.07,base=0){list=[...list];list.forEach((e,i)=>e.style.transitionDelay=(base+i*step).toFixed(2)+"s");return list}
+function cnt(e,to,{dec=0,ms=1000,fmt,delay=0}={}){const g=GEN,from=parseFloat(e.dataset.v||"0");e.dataset.v=to;const f=fmt||(v=>v.toFixed(dec));
+  if(INSTANT){e.textContent=f(to);return}const t0=performance.now()+delay;
+  const tick=n=>{if(g!==GEN)return;const k=Math.max(0,Math.min(1,(n-t0)/ms));e.textContent=f(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)};requestAnimationFrame(tick)}
+let BUILD_IDX=0;
+function title(s,kick,text){kick=String(BUILD_IDX).padStart(2,"0")+" · "+kick.replace(/^\d+ · /,"");return put(s,"stitle fx",`<small>${kick}</small>${text}`,48,26)}
+function wires(s){const v=document.createElementNS("http://www.w3.org/2000/svg","svg");v.setAttribute("class","wires");v.setAttribute("viewBox","0 0 1280 720");s.appendChild(v);return v}
+function wire(svg,d,cls=""){const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",d);p.setAttribute("class","wire "+cls);svg.appendChild(p);return p}
+
+const SCENES=[];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. INTRO
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"The Netflix Graph Problem",build(s){
+  const c={};
+  c.hero=put(s,"hero","",0,150,1280);
+  c.hero.innerHTML=`<div class="fx h1">How Netflix Recommends: <em>A Graph Theory Walkthrough</em></div>
+    <div class="fx sub">Bipartite Topologies, Personalized PageRank, Graph Neural Networks & Real-Time Random Walks</div>`;
+  c.p=[
+    ["BIPARTITE TOPOLOGY","var(--red)","Models <b>260M subscribers</b> and <b>15,000 titles</b> with zero matrix memory blowup."],
+    ["RANDOM WALKS & PPR","var(--accent)","Walks multi-hop paths to sample taste diffusion without computing $O(N^2)$ cross-products."],
+    ["GRAPH NEURAL NETWORKS","var(--green)","Message-passing convolutions aggregate deep non-linear community structure into 64D vectors."]
+  ].map(([k,col,t],i)=>put(s,"pill fx l",`<span class="pi" style="background:${col}1a;color:${col};border:1px solid ${col}44">${k}</span><span>${t}</span>`,160,255+i*70,960,"",`--c:${col}`));
+  
+  c.cards=[
+    ["01","Extreme Sparsity (99.8%)","A 260M × 15,000 user-item matrix has 3.9 Trillion cells, 99.8% empty. Graphs store only active edges."],
+    ["02","Paths Explain 'Why'","A 2-hop path (User → Show A → User B → Show B) provides auditable, human-interpretable reasoning."],
+    ["03","Heterogeneous Context","Actors, directors, genres, languages, and time of day live as typed vertices in the same topology."]
+  ].map(([n,h,p],i)=>put(s,"pcard fx",`<div class="n">${n}</div><h3>${h}</h3><p>${p}</p>`,48+i*402,485,380,185));
+  return c},steps:[
+  {say:"Welcome. Today we're looking inside Netflix's recommendation engine not as black-box machine learning, but strictly through the lens of graph theory.",run:c=>show([...c.hero.children])},
+  {say:"Netflix serves over 260 million subscribers across 15,000 titles. Traditional tabular databases and flat matrices collapse under this scale. Graph theory is how they turn that complexity into real-time sub-15ms recommendations.",run:c=>show(stag(c.p,.12))},
+  {say:"Three foundational laws govern this entire system: extreme sparsity turns matrices into graphs, multi-hop paths explain why content is shown, and heterogeneous entities connect everything.",run:c=>show(stag(c.cards,.12))}
+]});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. BIPARTITE GRAPH
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"The Core Bipartite Graph G = (U, V, E)",build(s){
+  const c={};title(s,"02 · The Bipartite Topology","User-Item Interaction Network G = (U, V, E)");
+  c.svg=wires(s);
+  
+  // Left: Users
+  c.uhead=put(s,"fx","",48,80,300,"","font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase");
+  c.uhead.textContent="Subscribers U (Disjoint Partition 1)";
+  
+  const UDATA=[
+    {id:"u1",name:"Alice (28)",sub:"Sci-Fi, Mind-Benders, Mystery",col:"#e50914"},
+    {id:"u2",name:"Bob (34)",sub:"Nordic Noir, Psychological Thrillers",col:"#6366f1"},
+    {id:"u3",name:"Charlie (22)",sub:"Korean Drama, Survival Thrillers",col:"#10b981"},
+    {id:"u4",name:"Diana (45)",sub:"Historical Drama, British Royalty",col:"#f59e0b"}
+  ];
+  c.unodes=UDATA.map((u,i)=>put(s,"gnode fx l",`
+    <div class="avatar" style="background:${u.col}22;color:${u.col};border:1px solid ${u.col}55">${u.id.toUpperCase()}</div>
+    <div class="info"><div class="name">${u.name}</div><div class="subtxt">${u.sub}</div></div>
+  `,48,110+i*88,320,72));
+
+  // Right: Titles
+  c.vhead=put(s,"fx","",912,80,300,"","font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;text-align:right");
+  c.vhead.textContent="Media Items V (Disjoint Partition 2)";
+
+  const MDATA=[
+    {id:"v1",t:"Stranger Things",sub:"Sci-Fi · 80s Horror · 4 Seasons",c:"#e50914",ic:"👾"},
+    {id:"v2",t:"Dark",sub:"German Mystery · Time Travel",c:"#6366f1",ic:"⏳"},
+    {id:"v3",t:"Black Mirror",sub:"Dystopian Tech · Anthology",c:"#a855f7",ic:"🪞"},
+    {id:"v4",t:"Squid Game",sub:"Korean Survival · High Tension",c:"#10b981",ic:"🦑"},
+    {id:"v5",t:"The Crown",sub:"British Royalty · Political Drama",c:"#f59e0b",ic:"👑"}
+  ];
+  c.vnodes=MDATA.map((m,i)=>put(s,"mnode fx r",`
+    <div class="post">${m.ic}</div>
+    <div class="info"><div class="title">${m.t}</div><div class="tags">${m.sub}</div></div>
+  `,912,106+i*78,320,66,`--c:${m.c}`));
+
+  // Wires connecting U and V
+  // Center math box
+  c.math=put(s,"formula-box fx",`
+    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">BIPARTITE ADJACENCY MATRIX A</div>
+    A = [  0   |  R  ]<br>
+        [ ---+--- ]  where R &isin; &real;<sup>|U| &times; |V|</sup><br>
+        [ R<sup>T</sup>  |  0  ]<br>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">No internal edges within U or within V: E &sube; U &times; V.</div>
+  `,410,120,460,130);
+
+  c.edges=[
+    {from:0,to:0,w:0.98,cls:"red",desc:"Alice &bull; Stranger Things (98% match, Rewatched)"},
+    {from:0,to:1,w:1.00,cls:"accent",desc:"Alice &bull; Dark (Binged in 48h, Thumbs Up)"},
+    {from:1,to:1,w:0.92,cls:"accent",desc:"Bob &bull; Dark (Completed, 5★ rating)"},
+    {from:1,to:2,w:0.95,cls:"violet",desc:"Bob &bull; Black Mirror (100% completion)"},
+    {from:2,to:3,w:0.99,cls:"green",desc:"Charlie &bull; Squid Game (Completed in 1 night)"},
+    {from:3,to:4,w:0.96,cls:"amber",desc:"Diana &bull; The Crown (Watched all 6 seasons)"}
+  ];
+  c.wires=c.edges.map(e=>{
+    const y1=146+e.from*88;
+    const y2=139+e.to*78;
+    return wire(c.svg,`M 368 ${y1} C 540 ${y1}, 740 ${y2}, 912 ${y2}`,e.cls);
+  });
+
+  c.edgecard=put(s,"card fx alt",`
+    <h4>Weighted Edge Encoding w<sub>uv</sub></h4>
+    <div style="font-size:13px;line-height:1.6;color:var(--text)">
+      An edge is never just a 1 or 0. Netflix weights edges using implicit telemetric feedback:<br>
+      <span class="chip red">Completion &ge; 90% (+0.4)</span>
+      <span class="chip accent">Rewatched (+0.3)</span>
+      <span class="chip green">Thumbs Up (+0.2)</span>
+      <span class="chip amber">No Drop-off (+0.1)</span>
     </div>
+  `,410,270,460,140);
 
-    <div class="ppt-deck-title" id="deckHeaderTitle">
-      SLIDE 01 // ARCHITECTURAL BLUEPRINT
+  c.triad=put(s,"card fx glow-teal",`
+    <h4>The Taste Bridge (Bob & Alice)</h4>
+    <div style="font-size:14px;line-height:1.5;color:var(--text)">
+      Notice that <b style="color:#e50914">Alice</b> and <b style="color:#6366f1">Bob</b> have never met, but they both connect to <b style="color:#a855f7">Dark</b>.<br>
+      In graph theory, this creates an open wedge (2-hop path). This wedge is the seed of collaborative filtering.
     </div>
+  `,410,430,460,130);
 
-    <div class="ppt-controls">
-      <button class="btn-ppt" id="btnOverview" title="Slide Overview (G)">
-        <span>Overview</span>
-        <span class="kbd">G</span>
-      </button>
+  return c},steps:[
+  {say:"Let's construct the core structure. On the left, we have our subscribers: Alice, Bob, Charlie, and Diana.",run:c=>{show(c.uhead);show(stag(c.unodes,.1))}},
+  {say:"On the right, we have our catalog of titles: Stranger Things, Dark, Black Mirror, Squid Game, and The Crown.",run:c=>{show(c.vhead);show(stag(c.vnodes,.1))}},
+  {say:"When subscribers watch and rate shows, edges form. This is a strictly bipartite graph: edges only exist between a user and a show, never between two users or two shows directly.",run:c=>{show(stag(c.wires,.08));show(c.math)}},
+  {say:"Crucially, these edges are attributed and weighted. A quick pause after 5 minutes has weight 0.1; binging an entire series with a thumbs up has weight 1.0.",run:c=>show(c.edgecard)},
+  {say:"Look at Alice and Bob. Both connect to Dark. In graph theory, Dark is their mutual neighbor. That 2-hop connection is how Netflix infers shared taste.",run:c=>{show(c.triad);c.unodes[0].classList.add("act");c.unodes[1].classList.add("act");c.vnodes[1].classList.add("act")}}
+]});
 
-      <button class="btn-ppt" id="btnAutoPlay" title="Auto Advance Slides (P)">
-        <span id="autoPlayIcon">&blacktriangleright;</span>
-        <span id="autoPlayText">Auto</span>
-        <span class="kbd">P</span>
-      </button>
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. GRAPH PROJECTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Graph Projections & 2-Hop Paths",build(s){
+  const c={};title(s,"03 · Bipartite Projections","Folding the Graph: S = R &bull; R<sup>T</sup> and S = R<sup>T</sup> &bull; R");
+  c.svg=wires(s);
 
-      <button class="btn-ppt" id="btnThemeToggle" title="Toggle Theme (T)">
-        <span id="themeLabel">Light</span>
-        <span class="kbd">T</span>
-      </button>
-
-      <button class="btn-ppt" id="btnFullscreen" title="Fullscreen (F)">
-        <span>FS</span>
-        <span class="kbd">F</span>
-      </button>
+  c.itemCard=put(s,"card fx l",`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="badge accent">Item-Item Projection</span>
+      <span class="mono" style="font-size:12px;color:var(--accent)">S<sub>item</sub> = R<sup>T</sup> &bull; R</span>
     </div>
-  </header>
-
-  <!-- PPT Stage & Canvas (16:9) -->
-  <main class="ppt-stage">
-    <div class="slide-canvas">
-      <div class="slide-viewport">
-
-        <!-- ==============================================
-             SLIDE 01: TITLE & EXECUTIVE AGENDA
-             ============================================== -->
-        <div class="slide active" id="slide-0">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">TECHNICAL BRIEFING // RECSYS 2026</div>
-              <h1 class="slide-title">Architecture of Modern Recommender Systems</h1>
-              <p class="slide-subtitle">
-                Mathematical Formulations, Two-Tower Dual Encoders, Multi-Armed Bandits &amp; The Netflix Production Walkthrough
-              </p>
-            </div>
-            <div class="slide-chip">P99 BUDGET: &le; 15ms</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-3col" style="margin-top: 10px;">
-              <div class="card-mono">
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 01</div>
-                <div class="card-mono-title">The Retrieval Funnel</div>
-                <p class="card-mono-desc">
-                  How 10,000,000 items are pruned to 10 candidates in &le;15ms through 4 cascading computational stages.
-                </p>
-                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-                  &bull; MIPS &amp; Approximate NN<br>
-                  &bull; Two-Tower DNN Encoders<br>
-                  &bull; ScaNN &amp; HNSW Graphs
-                </div>
-              </div>
-
-              <div class="card-mono">
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 02</div>
-                <div class="card-mono-title">Mathematical Rigor</div>
-                <p class="card-mono-desc">
-                  Interactive step-through matrix factorization, vector dot products, and counterfactual IPS bias debiasing.
-                </p>
-                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-                  &bull; SVD &amp; ALS Factorization<br>
-                  &bull; Cosine Latent Projections<br>
-                  &bull; Inverse Propensity Scoring
-                </div>
-              </div>
-
-              <div class="card-mono">
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;">PART 03</div>
-                <div class="card-mono-title">The Netflix Case Study</div>
-                <p class="card-mono-desc">
-                  2D page grid generation and dynamic thumbnail artwork personalization using LinUCB contextual bandits.
-                </p>
-                <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-                  &bull; 2D Slate Optimization<br>
-                  &bull; Dynamic LinUCB Math<br>
-                  &bull; Live Persona Arm Selection
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-            <span>PRESS <span class="kbd">&rarr;</span> OR <span class="kbd">SPACE</span> TO ADVANCE</span>
-            <span>PRESENTER MODE ACTIVE</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 02: THE FORMAL MATHEMATICAL OBJECTIVE
-             ============================================== -->
-        <div class="slide" id="slide-1">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 01 &mdash; PROBLEM FORMULATION</div>
-              <h2 class="slide-title">The Formal Optimization Problem</h2>
-              <p class="slide-subtitle">
-                Balancing catalog utility against strict inference latency and presentation redundancy.
-              </p>
-            </div>
-            <div class="slide-chip">OBJECTIVE FUNCTION</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <div>
-                <p class="card-mono-desc" style="font-size: 0.95rem; margin-bottom: 12px;">
-                  Given user <em>u &isin; U</em>, catalog <em>I</em> (|I| &gt; 10<sup>7</sup>), and real-time context vector <em>x<sub>u,c</sub></em>:
-                </p>
-
-                <div class="formula-display">
-                  S<sup>*</sup> = argmax<sub>|S|=K</sub> &sum;<sub>i &isin; S</sub> U(u, i, c) &minus; &lambda; &Omega;(S)
-                </div>
-
-                <div class="card-mono" style="margin-top: 16px;">
-                  <div class="card-mono-title">Interactive Mathematical Components</div>
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 2;">
-                    <div>&bull; <span class="math-term highlight">U(u, i, c)</span>: Expected utility (Watch Probability &times; Expected Stream Duration)</div>
-                    <div>&bull; <span class="math-term">&Omega;(S)</span>: Redundancy penalty (e.g. pairwise genre/actor similarity inside slate <em>S</em>)</div>
-                    <div>&bull; <span class="math-term">&lambda;</span>: Exploration / Diversity trade-off hyperparameter</div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="card-mono">
-                <div class="card-mono-title">The 15ms Latency Budget</div>
-                <p class="card-mono-desc">
-                  An exhaustive forward pass of a 100M parameter model across 10M titles takes ~4,500ms. Production architectures enforce a strict sub-15ms deadline:
-                </p>
-
-                <!-- Animated Latency Breakdown Bar -->
-                <div style="margin-top: 24px; font-family: var(--font-mono); font-size: 0.75rem;">
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>1. Gateway &amp; Auth (2ms)</span>
-                    <span>13%</span>
-                  </div>
-                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
-                    <div style="width: 13%; height: 100%; background: var(--text);"></div>
-                  </div>
-
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>2. Candidate Retrieval MIPS (4ms)</span>
-                    <span>27%</span>
-                  </div>
-                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
-                    <div style="width: 27%; height: 100%; background: var(--text);"></div>
-                  </div>
-
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>3. Deep Neural Reranker (7ms)</span>
-                    <span>47%</span>
-                  </div>
-                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; margin-bottom: 14px;">
-                    <div style="width: 47%; height: 100%; background: var(--text);"></div>
-                  </div>
-
-                  <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                    <span>4. Bandit Artwork &amp; Dedup (2ms)</span>
-                    <span>13%</span>
-                  </div>
-                  <div style="background: var(--border); height: 6px; border-radius: 3px; overflow: hidden;">
-                    <div style="width: 13%; height: 100%; background: var(--text);"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 02 // RECSYS FORMULATION</span>
-            <span>NEXT: MATRIX FACTORIZATION MATH &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 03: ANIMATED MATRIX FACTORIZATION MATH
-             ============================================== -->
-        <div class="slide" id="slide-2">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 02 &mdash; MATHEMATICAL FOUNDATIONS</div>
-              <h2 class="slide-title">Matrix Factorization (SVD / ALS)</h2>
-              <p class="slide-subtitle">
-                Decomposing the sparse rating matrix <em>R</em> into dense latent user factors <em>P</em> and item factors <em>Q</em>.
-              </p>
-            </div>
-            <div class="slide-chip">STEP-BY-STEP CALCULATION</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <div>
-                <div class="formula-display">
-                  &rcirc;<sub>ui</sub> = &mu; + b<sub>u</sub> + b<sub>i</sub> + &sum;<sub>f=1..k</sub> p<sub>uf</sub> &times; q<sub>fi</sub>
-                </div>
-
-                <div class="card-mono">
-                  <div class="card-mono-title">Loss Function Minimization</div>
-                  <div class="formula-display" style="font-size: 0.85rem; padding: 10px;">
-                    L = &sum; (r<sub>ui</sub> - &rcirc;<sub>ui</sub>)<sup>2</sup> + &lambda; (||p<sub>u</sub>||<sup>2</sup> + ||q<sub>i</sub>||<sup>2</sup>)
-                  </div>
-                  <p class="card-mono-desc">
-                    Trained via <strong>Alternating Least Squares (ALS)</strong>: fixing <em>P</em> solves <em>Q</em> in closed form; fixing <em>Q</em> solves <em>P</em>.
-                  </p>
-                  
-                  <button class="btn-ppt" id="btnRunMatrixAnim" style="margin-top: 14px; width: 100%; justify-content: center;">
-                    &blacktriangleright; Animate Dot Product Calculation (Row u &times; Col i)
-                  </button>
-                </div>
-              </div>
-
-              <!-- Animated Matrix Visualizer -->
-              <div class="card-mono" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 8px;">
-                  INTERACTIVE MATRIX MULTIPLICATION: R &approx; P &times; Q<sup>T</sup>
-                </div>
-
-                <div class="matrix-stage">
-                  <!-- User Matrix P -->
-                  <div class="matrix-box">
-                    <div style="font-size: 0.7rem; color: var(--text-dim);">P (User u=2)</div>
-                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
-                      <div class="m-cell">0.2</div><div class="m-cell">0.8</div><div class="m-cell">0.1</div>
-                      <div class="m-cell active-row" id="pCell0">0.9</div>
-                      <div class="m-cell active-row" id="pCell1">0.1</div>
-                      <div class="m-cell active-row" id="pCell2">0.7</div>
-                      <div class="m-cell">0.4</div><div class="m-cell">0.3</div><div class="m-cell">0.6</div>
-                    </div>
-                  </div>
-
-                  <div style="font-size: 1.4rem;">&times;</div>
-
-                  <!-- Item Matrix Q -->
-                  <div class="matrix-box">
-                    <div style="font-size: 0.7rem; color: var(--text-dim);">Q<sup>T</sup> (Item i=1)</div>
-                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
-                      <div class="m-cell active-col" id="qCell0">0.8</div>
-                      <div class="m-cell">0.3</div>
-                      <div class="m-cell">0.5</div>
-                      <div class="m-cell active-col" id="qCell1">0.2</div>
-                      <div class="m-cell">0.9</div>
-                      <div class="m-cell">0.1</div>
-                      <div class="m-cell active-col" id="qCell2">0.9</div>
-                      <div class="m-cell">0.4</div>
-                      <div class="m-cell">0.7</div>
-                    </div>
-                  </div>
-
-                  <div style="font-size: 1.4rem;">=</div>
-
-                  <!-- Resulting R Matrix -->
-                  <div class="matrix-box">
-                    <div style="font-size: 0.7rem; color: var(--text-dim);">&rcirc;<sub>2,1</sub> Rating</div>
-                    <div class="matrix-grid" style="grid-template-columns: repeat(3, 44px);">
-                      <div class="m-cell">3.8</div><div class="m-cell">2.1</div><div class="m-cell">4.0</div>
-                      <div class="m-cell target-cell" id="rTargetCell">4.75</div>
-                      <div class="m-cell">3.2</div><div class="m-cell">2.9</div>
-                      <div class="m-cell">1.8</div><div class="m-cell">4.1</div><div class="m-cell">3.5</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div id="matrixCalcLog" style="margin-top: 16px; font-family: var(--font-mono); font-size: 0.8rem; text-align: center; color: var(--text);">
-                  Calculation: (0.9 &times; 0.8) + (0.1 &times; 0.2) + (0.7 &times; 0.9) + &mu; = <strong>4.75 &starf;</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 03 // MATRIX DECOMPOSITION</span>
-            <span>NEXT: TWO-TOWER NEURAL RETRIEVAL &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 04: TWO-TOWER NEURAL RETRIEVAL & MIPS
-             ============================================== -->
-        <div class="slide" id="slide-3">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 03 &mdash; DEEP LEARNING ARCHITECTURES</div>
-              <h2 class="slide-title">Two-Tower Neural Retrieval &amp; MIPS</h2>
-              <p class="slide-subtitle">
-                Decoupled dual-encoders transforming heterogeneous user history and catalog metadata into a shared geometric space.
-              </p>
-            </div>
-            <div class="slide-chip">SUB-5ms VECTOR ANN</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <div class="card-mono">
-                <div class="card-mono-title">Dual-Encoder Architecture</div>
-                
-                <div class="tower-diagram" style="margin: 16px 0;">
-                  <!-- User Tower -->
-                  <div class="tower-box">
-                    <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;">USER TOWER f<sub>&theta;</sub>(u)</div>
-                    <div class="tower-layer" id="uLayer1">History &amp; Device Context</div>
-                    <div class="tower-layer" id="uLayer2">Transformer Self-Attention</div>
-                    <div class="tower-layer" id="uLayer3">Dense Projection (128-d)</div>
-                    <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800;">&rarr; u &isin; &Ropf;<sup>128</sup></div>
-                  </div>
-
-                  <div style="font-family: var(--font-mono); font-size: 1.2rem; font-weight: 800;">&bull;</div>
-
-                  <!-- Item Tower -->
-                  <div class="tower-box">
-                    <div style="font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;">ITEM TOWER g<sub>&phi;</sub>(i)</div>
-                    <div class="tower-layer" id="iLayer1">Title, Cast, Genre Tokens</div>
-                    <div class="tower-layer" id="iLayer2">Deep Multi-Layer Perceptron</div>
-                    <div class="tower-layer" id="iLayer3">Dense Projection (128-d)</div>
-                    <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 800;">&rarr; v &isin; &Ropf;<sup>128</sup></div>
-                  </div>
-                </div>
-
-                <div class="formula-display" style="font-size: 0.85rem;">
-                  P(i | u) = exp( u<sup>T</sup> v<sub>i</sub> / &tau; ) / &sum;<sub>j</sub> exp( u<sup>T</sup> v<sub>j</sub> / &tau; )
-                </div>
-              </div>
-
-              <!-- Vector Space Angle Canvas / Visualizer -->
-              <div class="card-mono" style="display: flex; flex-direction: column; justify-content: space-between;">
-                <div>
-                  <div class="card-mono-title">Vector Space Maximum Inner Product Search (MIPS)</div>
-                  <p class="card-mono-desc">
-                    Item embeddings <em>v<sub>i</sub></em> are indexed offline into <strong>HNSW (Hierarchical Navigable Small World)</strong> graphs. Online query only executes 1 forward pass of <em>f(u)</em>, followed by a graph traversal:
-                  </p>
-                </div>
-
-                <!-- Interactive Cosine Distance Slider -->
-                <div style="background: #000000; border: 1px solid var(--border); border-radius: 6px; padding: 20px; margin: 16px 0; text-align: center;">
-                  <svg viewBox="0 0 300 150" style="width: 100%; max-width: 280px; height: auto;">
-                    <line x1="150" y1="130" x2="270" y2="130" stroke="#555" stroke-width="2"/>
-                    <line x1="150" y1="130" x2="150" y2="20" stroke="#555" stroke-width="2"/>
-                    <!-- User Vector u -->
-                    <line id="vecU" x1="150" y1="130" x2="235" y2="45" stroke="#ffffff" stroke-width="3"/>
-                    <text x="245" y="42" fill="#ffffff" font-family="'Geist Mono'" font-size="11" font-weight="700">u (User)</text>
-                    <!-- Item Vector v -->
-                    <line id="vecV" x1="150" y1="130" x2="220" y2="60" stroke="#888888" stroke-width="2" stroke-dasharray="4,4"/>
-                    <text x="228" y="70" fill="#888888" font-family="'Geist Mono'" font-size="11">v (Item)</text>
-                    <!-- Angle arc -->
-                    <path id="angleArc" d="M 180 130 A 30 30 0 0 0 171 109" fill="none" stroke="#ffffff" stroke-width="1.5"/>
-                  </svg>
-
-                  <div style="font-family: var(--font-mono); font-size: 0.85rem; margin-top: 10px;">
-                    Angle &theta;: <span id="angleVal">15&deg;</span> &bull; Cosine Similarity: <strong id="cosSimVal">0.965</strong>
-                  </div>
-                </div>
-
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-                  Logarithmic time complexity: <strong>O(log N)</strong> vs Exhaustive scan <strong>O(N)</strong>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 04 // TWO-TOWER ENCODERS</span>
-            <span>NEXT: ANIMATED CANDIDATE FUNNEL &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 05: ANIMATED 4-STAGE CANDIDATE FUNNEL
-             ============================================== -->
-        <div class="slide" id="slide-4">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 04 &mdash; THE PRODUCTION FUNNEL</div>
-              <h2 class="slide-title">Animated 4-Stage Candidate Funnel</h2>
-              <p class="slide-subtitle">
-                Real-time particle simulation demonstrating candidate volume pruning from 10M titles to 10 page items.
-              </p>
-            </div>
-            <div class="slide-chip">CANDIDATE PRUNING RATIO: 1,000,000 : 1</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <!-- Canvas Particle Funnel -->
-              <div class="funnel-canvas-wrapper">
-                <canvas id="funnelCanvas"></canvas>
-                <div style="position: absolute; bottom: 10px; right: 12px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim);">
-                  LIVE PARTICLE EMITTER
-                </div>
-              </div>
-
-              <!-- Cascade Stage Metrics -->
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div class="card-mono" style="padding: 12px 18px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
-                    <span>1. RETRIEVAL (Two-Tower MIPS)</span>
-                    <span>10M &rarr; 1,000 items</span>
-                  </div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
-                    Latency: &lt;4ms &bull; Model: Dual DNN + Vector ANN &bull; Priority: 100% Recall
-                  </div>
-                </div>
-
-                <div class="card-mono" style="padding: 12px 18px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
-                    <span>2. FIRST-STAGE SCORING (DCN)</span>
-                    <span>1,000 &rarr; 200 items</span>
-                  </div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
-                    Latency: &lt;5ms &bull; Model: Deep &amp; Cross Network &bull; Context: Device &amp; Time
-                  </div>
-                </div>
-
-                <div class="card-mono" style="padding: 12px 18px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
-                    <span>3. HEAVY RERANKER (MMoE / BST)</span>
-                    <span>200 &rarr; 50 items</span>
-                  </div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
-                    Latency: &lt;6ms &bull; Multi-task objectives: P(Click), P(Complete), P(Share)
-                  </div>
-                </div>
-
-                <div class="card-mono" style="padding: 12px 18px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.8rem; font-weight: 700;">
-                    <span>4. SLATE &amp; BANDIT GENERATION</span>
-                    <span>50 &rarr; 10 items</span>
-                  </div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
-                    Latency: &lt;2ms &bull; Model: LinUCB Artwork Bandits + DPP Diversity
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 05 // CANDIDATE CASCADE</span>
-            <span>NEXT: NETFLIX 2D PAGE OPTIMIZATION &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 06: NETFLIX 2D PAGE GRID GENERATION
-             ============================================== -->
-        <div class="slide" id="slide-5">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 05 &mdash; NETFLIX WALKTHROUGH</div>
-              <h2 class="slide-title">Netflix: Two-Dimensional Slate Generation</h2>
-              <p class="slide-subtitle">
-                The homepage is not a 1D ranked list. It is a 2D matrix optimizing vertical row composition and horizontal title ordering.
-              </p>
-            </div>
-            <div class="slide-chip">PAGE-LEVEL UTILITY</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <div>
-                <p class="card-mono-desc" style="font-size: 0.9rem; margin-bottom: 12px;">
-                  Netflix solves a simultaneous 2D page ranking problem:
-                </p>
-
-                <div class="formula-display" style="font-size: 0.85rem;">
-                  Score(Page) = &sum;<sub>r=1..R</sub> w<sub>r</sub> &times; Score(Row<sub>r</sub>) &minus; Penalty(Overlap)
-                </div>
-
-                <div class="card-mono" style="margin-top: 14px;">
-                  <div class="card-mono-title">Specialized Row Generation Algorithms</div>
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 2;">
-                    <div>&bull; <strong>PVR (Personalized Video Ranker)</strong>: General catalog ranking.</div>
-                    <div>&bull; <strong>Sims (Item-Item)</strong>: "Because You Watched Stranger Things".</div>
-                    <div>&bull; <strong>Top-N / Trending Now</strong>: Temporal decay + geographic velocity.</div>
-                    <div>&bull; <strong>Continue Watching</strong>: Time elapsed since last chunk consumed.</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Animated Simulated Netflix UI Rows in Strict Monochrome -->
-              <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div class="card-mono" style="padding: 12px 16px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
-                    <span style="font-weight: 700;">&gt; ROW 1: TOP PICKS FOR YOU (PVR)</span>
-                    <span style="color: var(--text-dim);">P(stream): 0.982</span>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Interstellar</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Dark (S3)</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Ex Machina</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Arrival</div>
-                  </div>
-                </div>
-
-                <div class="card-mono" style="padding: 12px 16px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
-                    <span style="font-weight: 700;">&gt; ROW 2: BECAUSE YOU WATCHED OPPENHEIMER</span>
-                    <span style="color: var(--text-dim);">Cosine Sim: 0.914</span>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Chernobyl</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Imitation Game</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Dunkirk</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">A Beautiful Mind</div>
-                  </div>
-                </div>
-
-                <div class="card-mono" style="padding: 12px 16px;">
-                  <div style="display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; margin-bottom: 8px;">
-                    <span style="font-weight: 700;">&gt; ROW 3: GENRE DIVERSITY (CRIME &amp; THRILLER)</span>
-                    <span style="color: var(--text-dim);">Entropy Boost: +0.42</span>
-                  </div>
-                  <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;">
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Mindhunter</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Zodiac</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Seven</div>
-                    <div style="background: var(--bg-panel); border: 1px solid var(--border); padding: 8px; border-radius: 3px; font-family: var(--font-mono); font-size: 0.65rem;">Sicario</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 06 // NETFLIX 2D GRID</span>
-            <span>NEXT: DYNAMIC ARTWORK BANDITS MATH &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 07: NETFLIX DYNAMIC ARTWORK BANDIT MATH
-             ============================================== -->
-        <div class="slide" id="slide-6">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 06 &mdash; CONTEXTUAL MULTI-ARMED BANDITS</div>
-              <h2 class="slide-title">Dynamic Artwork Personalization: LinUCB Math</h2>
-              <p class="slide-subtitle">
-                Mathematical formulation of how Netflix selects personalized thumbnail artwork per user in real time.
-              </p>
-            </div>
-            <div class="slide-chip">LINUCB ALGORITHM</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="bandit-container">
-              <div>
-                <!-- LinUCB Equation with Interactive Term Highlight -->
-                <div class="formula-display" style="font-size: 0.95rem; line-height: 1.8;">
-                  a<sup>*</sup> = argmax<sub>a</sub> [ 
-                  <span class="math-term highlight" id="termExploit">&theta;<sub>a</sub><sup>T</sup> x<sub>u</sub></span> 
-                  + 
-                  <span class="math-term" id="termExplore">&alpha; &radic;( x<sub>u</sub><sup>T</sup> A<sub>a</sub><sup>-1</sup> x<sub>u</sub> )</span> 
-                  ]
-                </div>
-
-                <div class="card-mono" style="margin-top: 12px;">
-                  <div id="termExplText">
-                    <strong style="color: var(--text);">Term 1: &theta;<sub>a</sub><sup>T</sup> x<sub>u</sub> (Exploitation)</strong><br>
-                    <span style="font-size: 0.8rem; color: var(--text-dim);">
-                      Estimated ridge regression payoff for arm <em>a</em> given user feature vector <em>x<sub>u</sub></em> (past genre interactions, actor preferences).
-                    </span>
-                  </div>
-                  <div id="termExploreText" style="margin-top: 10px; font-size: 0.8rem; color: var(--text-dim);">
-                    <strong style="color: var(--text);">Term 2: &alpha;&radic;(...) (Exploration)</strong><br>
-                    Width of the uncertainty ellipsoid. If an artwork has rarely been shown to this demographic, variance is high, granting an exploration bonus.
-                  </div>
-                </div>
-
-                <!-- Persona Switcher -->
-                <div style="margin-top: 16px;">
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 6px;">
-                    SIMULATE USER CONTEXT VECTOR x<sub>u</sub>:
-                  </div>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                    <button class="btn-ppt active" id="btnP1" onclick="switchBanditPersona('action')">Persona: Action Fan</button>
-                    <button class="btn-ppt" id="btnP2" onclick="switchBanditPersona('romance')">Persona: Romance Fan</button>
-                    <button class="btn-ppt" id="btnP3" onclick="switchBanditPersona('uma')">Persona: Uma Thurman Fan</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Animated Artwork Card -->
-              <div class="artwork-art-box" id="banditArtCard">
-                <svg class="art-svg-bg" id="banditArtSvg" viewBox="0 0 320 180"></svg>
-                <div style="position: relative; z-index: 2; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-dim); letter-spacing: 2px;">
-                  NETFLIX PERSONALIZED ARTWORK ARM
-                </div>
-
-                <div style="position: relative; z-index: 2;">
-                  <div style="font-size: 1.6rem; font-weight: 900; letter-spacing: -0.5px;" id="banditMovieTitle">PULP FICTION</div>
-                  <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);" id="banditArmLabel">
-                    Selected Arm: Weapon Standoff Variant
-                  </div>
-                  <div style="margin-top: 10px; background: rgba(0,0,0,0.7); border: 1px solid var(--border); border-radius: 4px; padding: 6px 10px; font-family: var(--font-mono); font-size: 0.7rem;">
-                    Predicted CTR: <strong id="banditCtrVal">21.8%</strong> &bull; Upper Bound: <strong id="banditUcbVal">0.962</strong>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 07 // LINUCB CONTEXTUAL BANDITS</span>
-            <span>NEXT: POSITION BIAS &amp; EVALUATION &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 08: POSITION BIAS & INVERSE PROPENSITY SCORING
-             ============================================== -->
-        <div class="slide" id="slide-7">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 07 &mdash; EVALUATION RIGOR</div>
-              <h2 class="slide-title">Offline Bias: Inverse Propensity Scoring</h2>
-              <p class="slide-subtitle">
-                Correcting presentation bias in log click data so offline ranking benchmarks reflect true relevance.
-              </p>
-            </div>
-            <div class="slide-chip">DEBIASED EVALUATION</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="split-2col">
-              <div>
-                <div class="card-mono-title">The Position Bias Dilemma</div>
-                <p class="card-mono-desc">
-                  Position 1 receives <strong>400% more clicks</strong> simply because users read top-to-bottom, regardless of true quality. Evaluating models on raw clicks reinforces self-fulfilling feedback loops.
-                </p>
-
-                <div class="formula-display" style="font-size: 0.9rem; margin-top: 14px;">
-                  R&#770;<sub>IPS</sub> = 1/|D| &sum;<sub>(u,i) &isin; D</sub> [ y<sub>ui</sub> &times; c<sub>ui</sub> / P(O<sub>ui</sub>=1 | pos<sub>i</sub>) ]
-                </div>
-
-                <div class="card-mono" style="margin-top: 14px;">
-                  <div style="font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.8;">
-                    <div>&bull; <strong>y<sub>ui</sub></strong>: Binary feedback (click or stream &ge; 2 min)</div>
-                    <div>&bull; <strong>P(O<sub>ui</sub>=1 | pos)</strong>: Examination propensity at rank position</div>
-                    <div>&bull; <strong>c<sub>ui</sub></strong>: Counterfactual weight correcting observational bias</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Animated Bar Comparison (Naive vs Unbiased IPS) -->
-              <div class="card-mono">
-                <div class="card-mono-title">Examined Click-Through Probability Across Ranks</div>
-                <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-bottom: 16px;">
-                  Comparing Naive Observed CTR vs Unbiased Examination Propensity:
-                </div>
-
-                <div style="font-family: var(--font-mono); font-size: 0.75rem;">
-                  <!-- Rank 1 -->
-                  <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                      <span>Rank 1 (Top Hero)</span>
-                      <span>Observed: 42% &bull; Propensity: 0.88</span>
-                    </div>
-                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
-                      <div style="width: 88%; height: 100%; background: var(--text);"></div>
-                    </div>
-                  </div>
-
-                  <!-- Rank 3 -->
-                  <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                      <span>Rank 3 (Row Center)</span>
-                      <span>Observed: 18% &bull; Propensity: 0.42</span>
-                    </div>
-                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
-                      <div style="width: 42%; height: 100%; background: var(--text);"></div>
-                    </div>
-                  </div>
-
-                  <!-- Rank 10 -->
-                  <div style="margin-bottom: 12px;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-                      <span>Rank 10 (Far Right)</span>
-                      <span>Observed: 4% &bull; Propensity: 0.12</span>
-                    </div>
-                    <div style="background: var(--border); height: 8px; border-radius: 4px; overflow: hidden;">
-                      <div style="width: 12%; height: 100%; background: var(--text);"></div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="margin-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim);">
-                  &bull; IPS mathematically guarantees unbiased off-policy A/B risk reduction.
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 08 // IPS BIAS MITIGATION</span>
-            <span>NEXT: SYSTEM ARCHITECTURE BLUEPRINT &rarr;</span>
-          </div>
-        </div>
-
-        <!-- ==============================================
-             SLIDE 09: SYSTEM ARCHITECTURE BLUEPRINT
-             ============================================== -->
-        <div class="slide" id="slide-8">
-          <div class="slide-header">
-            <div>
-              <div class="slide-meta-tag">// SECTION 08 &mdash; PRODUCTION SYSTEM BLUEPRINT</div>
-              <h2 class="slide-title">End-to-End Production Serving Pipeline</h2>
-              <p class="slide-subtitle">
-                Complete data plane from offline training and nearline streaming feature extraction to sub-15ms online serving.
-              </p>
-            </div>
-            <div class="slide-chip">HIGH AVAILABILITY ARCHITECTURE</div>
-          </div>
-
-          <div class="slide-body">
-            <div class="card-mono" style="padding: 24px;">
-              <svg viewBox="0 0 1000 320" style="width: 100%; height: auto;" xmlns="http://www.w3.org/2000/svg">
-                <!-- Data Streams -->
-                <rect x="20" y="40" width="180" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
-                <text x="110" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">USER EVENTS</text>
-                <text x="110" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Clicks, Plays, Skips</text>
-
-                <!-- Apache Kafka / Flink -->
-                <path d="M 200 85 L 260 85" stroke="#ffffff" stroke-width="2" marker-end="url(#arrow)"/>
-                <rect x="260" y="40" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
-                <text x="360" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">STREAMING (FLINK)</text>
-                <text x="360" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Real-Time User State</text>
-
-                <!-- Feature Store -->
-                <path d="M 460 85 L 520 85" stroke="#ffffff" stroke-width="2"/>
-                <rect x="520" y="40" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
-                <text x="620" y="75" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">FEATURE STORE</text>
-                <text x="620" y="100" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Redis / Cassandra (P99 1ms)</text>
-
-                <!-- Offline Training -->
-                <rect x="260" y="190" width="200" height="90" rx="6" fill="#141414" stroke="#666666" stroke-width="1.5" stroke-dasharray="4,4"/>
-                <text x="360" y="225" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">OFFLINE TRAINING</text>
-                <text x="360" y="250" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Ray / PyTorch Two-Tower</text>
-
-                <!-- Vector DB -->
-                <path d="M 460 235 L 520 235" stroke="#666666" stroke-width="2" stroke-dasharray="4,4"/>
-                <rect x="520" y="190" width="200" height="90" rx="6" fill="#141414" stroke="#ffffff" stroke-width="1.5"/>
-                <text x="620" y="225" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="12" font-weight="700">VECTOR DB (HNSW)</text>
-                <text x="620" y="250" text-anchor="middle" fill="#888888" font-family="'Geist Mono'" font-size="10">Indexed Item Embeddings</text>
-
-                <!-- Online Serving Cluster -->
-                <path d="M 720 85 L 780 140" stroke="#ffffff" stroke-width="2"/>
-                <path d="M 720 235 L 780 180" stroke="#ffffff" stroke-width="2"/>
-                <rect x="780" y="110" width="200" height="100" rx="6" fill="#ffffff" stroke="#ffffff" stroke-width="2"/>
-                <text x="880" y="150" text-anchor="middle" fill="#000000" font-family="'Geist Mono'" font-size="13" font-weight="900">ONLINE ENVOY gRPC</text>
-                <text x="880" y="172" text-anchor="middle" fill="#000000" font-family="'Geist Mono'" font-size="10">Retrieval &rarr; Scoring &rarr; Bandit</text>
-                <text x="880" y="192" text-anchor="middle" fill="#333333" font-family="'Geist Mono'" font-size="9" font-weight="700">Total Serving: &le; 15ms</text>
-              </svg>
-            </div>
-          </div>
-
-          <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); display: flex; justify-content: space-between;">
-            <span>SLIDE 09 // PRODUCTION BLUEPRINT</span>
-            <span>END OF SLIDE DECK &bull; PRESS [G] FOR GRID</span>
-          </div>
-        </div>
-
+    <div style="font-size:14px;color:var(--muted);margin-bottom:12px">Two titles are connected if they share common viewers. Edge weight = co-viewing count.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="chip red" style="display:flex;justify-content:space-between"><span>Dark &harr; Stranger Things</span><b>4.8M Co-views</b></div>
+      <div class="chip accent" style="display:flex;justify-content:space-between"><span>Dark &harr; Black Mirror</span><b>3.9M Co-views</b></div>
+      <div class="chip green" style="display:flex;justify-content:space-between"><span>Squid Game &harr; Alice in Borderland</span><b>6.2M Co-views</b></div>
+      <div class="chip amber" style="display:flex;justify-content:space-between"><span>The Crown &harr; Bridgerton</span><b>5.1M Co-views</b></div>
+    </div>
+  `,48,100,370,300);
+
+  c.userCard=put(s,"card fx r",`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="badge red">User-User Projection</span>
+      <span class="mono" style="font-size:12px;color:var(--red)">S<sub>user</sub> = R &bull; R<sup>T</sup></span>
+    </div>
+    <div style="font-size:14px;color:var(--muted);margin-bottom:12px">Two subscribers are connected if their watch histories overlap. Edge weight = Jaccard or Cosine similarity.</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="chip red" style="display:flex;justify-content:space-between"><span>Alice &harr; Bob (Mind-Benders)</span><b>0.91 Cosine</b></div>
+      <div class="chip amber" style="display:flex;justify-content:space-between"><span>Alice &harr; Charlie</span><b>0.12 Cosine</b></div>
+      <div class="chip dim" style="display:flex;justify-content:space-between"><span>Alice &harr; Diana</span><b>0.02 (Orthogonal)</b></div>
+    </div>
+  `,862,100,370,300);
+
+  // Center: The 2-hop path walk
+  c.walkCard=put(s,"card fx p",`
+    <h4>The 2-Hop Path Walk: Explaining 'Because You Watched'</h4>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 16px;position:relative">
+      <div class="gnode" id="w_u1" style="width:130px;flex-direction:column;text-align:center;padding:12px 6px">
+        <div class="avatar" style="background:#e5091422;color:#e50914;margin:0 auto 6px">U1</div>
+        <div class="name">Alice</div>
+      </div>
+      <div style="font-size:22px;color:var(--dim)">&rarr;</div>
+      <div class="mnode" id="w_m2" style="width:140px;flex-direction:column;text-align:center;padding:12px 6px;--c:#6366f1">
+        <div style="font-size:20px;margin-bottom:4px">⏳</div>
+        <div class="title" style="font-size:13px">Dark</div>
+      </div>
+      <div style="font-size:22px;color:var(--dim)">&larr;</div>
+      <div class="gnode" id="w_u2" style="width:130px;flex-direction:column;text-align:center;padding:12px 6px">
+        <div class="avatar" style="background:#6366f122;color:#6366f1;margin:0 auto 6px">U2</div>
+        <div class="name">Bob</div>
+      </div>
+      <div style="font-size:22px;color:var(--dim)">&rarr;</div>
+      <div class="mnode" id="w_m3" style="width:140px;flex-direction:column;text-align:center;padding:12px 6px;--c:#a855f7">
+        <div style="font-size:20px;margin-bottom:4px">🪞</div>
+        <div class="title" style="font-size:13px">Black Mirror</div>
       </div>
     </div>
-  </main>
-
-  <!-- Bottom Slide Progress & Controls -->
-  <footer class="ppt-footer">
-    <div class="slide-progress-bar" id="slideProgressBar" style="width: 11%;"></div>
-
-    <div style="display: flex; align-items: center; gap: 14px;">
-      <span id="footerSlideCounter">01 / 09</span>
-      <span style="color: var(--text-muted);">|</span>
-      <span id="footerSlideTitle" style="color: var(--text-dim);">TITLE &amp; AGENDA</span>
+    <div class="formula-box" style="font-size:13.5px;padding:12px 16px">
+      Recommendation Score(Alice, Black Mirror) = &sum;<sub>u &in; Viewers(Dark)</sub> w(Alice, Dark) &times; w(u, Dark) &times; w(u, Black Mirror)
     </div>
+  `,440,100,400,300);
 
-    <div style="display: flex; align-items: center; gap: 8px;">
-      <button class="nav-arrow-btn" id="btnPrevSlide" title="Previous Slide (←)">&larr;</button>
-      <button class="nav-arrow-btn" id="btnNextSlide" title="Next Slide (→)">&rarr;</button>
+  c.explain=put(s,"card fx glow-amber",`
+    <h4>Explainability & Provenance</h4>
+    <div style="font-size:15px;line-height:1.6;color:var(--text)">
+      When Netflix shows a row titled <b>"Because you watched Dark"</b>, they are literally tracing the 2-hop bipartite walk:
+      <span class="mono" style="color:var(--accent)">Alice &rarr; Dark &rarr; Other Viewers &rarr; Black Mirror</span>.<br>
+      Graph walks give explainability for free. Deep black-box neural networks cannot do this without complex post-hoc explainers like SHAP.
     </div>
-  </footer>
+  `,180,440,920,130);
 
-  <!-- Grid Slide Overview Modal (Key G) -->
-  <div class="grid-overlay" id="gridOverlay">
-    <div style="display: flex; justify-content: space-between; align-items: center; max-width: 1280px; margin: 0 auto 30px auto; font-family: var(--font-mono);">
-      <h2 style="font-size: 1.2rem; font-weight: 800;">SLIDE OVERVIEW // 9 TOTAL SLIDES</h2>
-      <button class="btn-ppt" id="btnCloseOverview">Close (Esc)</button>
+  return c},steps:[
+  {say:"A bipartite graph can be mathematically folded in two ways: into an Item-Item projection, or into a User-User projection.",run:c=>{show(c.itemCard);show(c.userCard)}},
+  {say:"Item-item projection multiplies the transposed interaction matrix by itself: S = R-transpose times R. This tells Netflix which titles are co-watched together by millions of viewers.",run:c=>c.itemCard.classList.add("act")},
+  {say:"User-user projection gives user similarity. But in production, Netflix computes these connections dynamically using multi-hop graph walks.",run:c=>show(c.walkCard)},
+  {say:"Look at the walk: Alice watched Dark. Bob also watched Dark, and Bob loved Black Mirror. The 2-hop path directly connects Alice to Black Mirror.",run:c=>{show(c.explain);c.walkCard.classList.add("act")}}
+]});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. RANDOM WALKS & PERSONALIZED PAGERANK
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Personalized PageRank & Random Walks",build(s){
+  const c={};title(s,"04 · Graph Traversal","Personalized PageRank (PPR) & Random Walks with Restart (RWR)");
+  
+  c.math=put(s,"formula-box fx",`
+    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">STATIONARY DISTRIBUTION EQUATION</div>
+    &pi;<sub>u</sub> = (1 - &alpha;) P<sup>T</sup> &pi;<sub>u</sub> + &alpha; e<sub>u</sub>
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      &bull; &alpha; = 0.15 (Teleport probability back to seed subscriber Alice)<br>
+      &bull; P<sub>ij</sub> = Transition probability proportional to edge weight w<sub>ij</sub> / &sum; w<br>
+      &bull; e<sub>u</sub> = Standard basis vector with 1 at Alice's index, 0 elsewhere
     </div>
+  `,48,100,560,165);
 
-    <div class="overview-grid" id="overviewGrid">
-      <!-- Grid thumbnails dynamically generated -->
+  c.walkBox=put(s,"card fx alt",`
+    <h4>Live Random Walk Simulation (10,000 Particles)</h4>
+    <div style="font-size:13.5px;color:var(--muted);line-height:1.5">
+      We inject 10,000 random walkers starting at Alice (<span style="color:#e50914;font-weight:700">U1</span>).<br>
+      At each step, a walker either teleports back to Alice with probability &alpha; = 15%, or steps to a neighboring show/user.
     </div>
-  </div>
+    <div style="display:flex;gap:12px;margin-top:14px">
+      <div class="chip red">Step 1: Alice &rarr; {Stranger Things, Dark}</div>
+      <div class="chip accent">Step 2: Dark &rarr; {Bob, David}</div>
+      <div class="chip violet">Step 3: Bob &rarr; {Black Mirror, Mindhunter}</div>
+    </div>
+  `,48,285,560,160);
 
-  <script>
-    // -------------------------------------------------------------
-    // SLIDE DECK LOGIC & PRESENTATION CONTROLLER
-    // -------------------------------------------------------------
-    const slidesData = [
-      { id: 0, title: "Title & Executive Agenda" },
-      { id: 1, title: "Formal Mathematical Objective" },
-      { id: 2, title: "Matrix Factorization (SVD / ALS)" },
-      { id: 3, title: "Two-Tower Neural Retrieval & MIPS" },
-      { id: 4, title: "Animated 4-Stage Candidate Funnel" },
-      { id: 5, title: "Netflix 2D Slate & Page Optimization" },
-      { id: 6, title: "Netflix Dynamic Artwork: LinUCB Bandits" },
-      { id: 7, title: "Position Bias & Inverse Propensity Scoring" },
-      { id: 8, title: "Production System Architecture Blueprint" }
-    ];
+  c.barBox=put(s,"card fx r",`
+    <h4>Stationary Visitation Probability &pi;<sub>Alice</sub> (Recommendation Slate)</h4>
+    <div id="ppr_bars" style="margin-top:12px">
+      <div class="brow top"><div class="lab">Black Mirror (Anthology)</div><div class="bar-wrap"><div class="bar" style="width:84%"></div></div><div class="val">0.342</div></div>
+      <div class="brow top"><div class="lab">Mindhunter (Crime Noir)</div><div class="bar-wrap"><div class="bar" style="width:68%"></div></div><div class="val">0.281</div></div>
+      <div class="brow"><div class="lab">Severance (Sci-Fi Thriller)</div><div class="bar-wrap"><div class="bar" style="width:48%"></div></div><div class="val">0.194</div></div>
+      <div class="brow"><div class="lab">Squid Game (Survival)</div><div class="bar-wrap"><div class="bar" style="width:34%"></div></div><div class="val">0.149</div></div>
+      <div class="brow" style="opacity:.4"><div class="lab">The Crown (Royalty)</div><div class="bar-wrap"><div class="bar" style="width:3%"></div></div><div class="val">0.012</div></div>
+      <div class="brow" style="opacity:.2"><div class="lab">Bridgerton (Romance)</div><div class="bar-wrap"><div class="bar" style="width:1%"></div></div><div class="val">0.004</div></div>
+    </div>
+  `,640,100,592,345);
 
-    let currentSlide = 0;
-    const totalSlides = slidesData.length;
-    let autoPlayInterval = null;
+  c.summary=put(s,"card fx glow-teal",`
+    <h4>Why Random Walk with Restart Beats Matrix Search</h4>
+    <div style="font-size:14.5px;line-height:1.55;color:var(--text)">
+      1. <b>Extreme Efficiency:</b> Instead of computing matrix inverses or dense dot products over 15,000 items, PPR walks only the local neighborhood.<br>
+      2. <b>Self-Pruning:</b> Irrelevant genres like <i>The Crown</i> naturally receive zero particle visits (&pi; &approx; 0.012) and drop off automatically.<br>
+      3. <b>Diversity & Serendipity:</b> Particles occasionally jump across subtle thematic edges, discovering unexpected gems like <i>Severance</i>.
+    </div>
+  `,48,465,1184,145);
 
-    const deckHeaderTitle = document.getElementById('deckHeaderTitle');
-    const footerSlideCounter = document.getElementById('footerSlideCounter');
-    const footerSlideTitle = document.getElementById('footerSlideTitle');
-    const slideProgressBar = document.getElementById('slideProgressBar');
-    const btnPrevSlide = document.getElementById('btnPrevSlide');
-    const btnNextSlide = document.getElementById('btnNextSlide');
+  return c},steps:[
+  {say:"How does Netflix explore the graph without exploding compute? The answer is Personalized PageRank and Random Walks with Restart.",run:c=>show(c.math)},
+  {say:"Imagine dropping 10,000 virtual particles on Alice. At each turn, particles hop to shows Alice watched, then to other subscribers who loved those shows, with a 15% chance to teleport back to Alice.",run:c=>show(c.walkBox)},
+  {say:"After just 20 to 30 iterations, the particle visits converge to a stationary probability distribution. Shows with the highest visitation frequency become Alice's top recommendations.",run:c=>show(c.barBox)},
+  {say:"Look at the bar chart: Black Mirror and Mindhunter dominate. Meanwhile, The Crown and Bridgerton receive virtually zero visits. The graph topology filters out noise naturally.",run:c=>show(c.summary)}
+]});
 
-    function goToSlide(index) {
-      if (index < 0) index = 0;
-      if (index >= totalSlides) index = totalSlides - 1;
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. HETEROGENEOUS INFORMATION NETWORKS (COLD START)
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Heterogeneous Graphs & Cold Start",build(s){
+  const c={};title(s,"05 · Heterogeneous Networks","Typed Vertices & Metapaths for the Zero-View Cold Start Problem");
+  c.svg=wires(s);
 
-      // Update slide classes
-      for (let i = 0; i < totalSlides; i++) {
-        const el = document.getElementById(`slide-${i}`);
-        if (el) {
-          el.classList.remove('active', 'prev-slide');
-          if (i === index) {
-            el.classList.add('active');
-          } else if (i < index) {
-            el.classList.add('prev-slide');
-          }
-        }
-      }
+  c.coldCard=put(s,"card fx l",`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span class="badge red">The Cold Start Catastrophe</span>
+      <span class="mono" style="color:var(--red);font-size:12px">Degree d(v) = 0</span>
+    </div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.55">
+      A brand-new original series, <b>"1899"</b>, launches on Netflix at 12:00 AM.<br>
+      It has <b>0 subscriber views</b> and <b>0 ratings</b>. In a pure User-Item bipartite graph, it is an isolated vertex.
+      Collaborative filtering and random walks will <b>never</b> reach it.
+    </div>
+    <div class="mnode" style="margin-top:14px;border-color:var(--red);background:var(--red-soft);--c:#e50914">
+      <div class="post">🚢</div>
+      <div class="info"><div class="title">1899 (New Release)</div><div class="tags" style="color:#ff858d">0 Views &bull; 0 Ratings &bull; Isolated Node</div></div>
+    </div>
+  `,48,100,420,290);
 
-      currentSlide = index;
+  c.hinCard=put(s,"card fx p",`
+    <h4>The Heterogeneous Entity Graph (HIN)</h4>
+    <div style="font-size:13.5px;color:var(--muted);margin-bottom:12px">
+      Netflix expands the graph to include typed non-user vertices: Directors, Actors, Genres, and Soundtracks.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="chip violet">🎬 Director: Baran bo Odar</div>
+      <div class="chip cyan">🎭 Actor: Andreas Pietschmann</div>
+      <div class="chip accent">🏷️ Genre: Mind-Bender Mystery</div>
+      <div class="chip amber">🌍 Origin: German Production</div>
+    </div>
+    <div class="formula-box" style="margin-top:16px;font-size:13px;padding:12px 14px">
+      <b>Metapath &Rho;<sub>Director</sub>:</b><br>
+      User &rarr; [Watched] &rarr; Dark &rarr; [DirectedBy] &rarr; Baran bo Odar &larr; [DirectedBy] &larr; 1899
+    </div>
+  `,490,100,742,290);
 
-      // Update Header & Footer
-      const numStr = String(currentSlide + 1).padStart(2, '0');
-      const totStr = String(totalSlides).padStart(2, '0');
-      deckHeaderTitle.textContent = `SLIDE ${numStr} // ${slidesData[currentSlide].title.toUpperCase()}`;
-      footerSlideCounter.textContent = `${numStr} / ${totStr}`;
-      footerSlideTitle.textContent = slidesData[currentSlide].title.toUpperCase();
+  c.pathsim=put(s,"card fx",`
+    <h4>PathSim: Metapath-Guided Similarity</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
+      <div class="formula-box" style="font-size:13px">
+        PathSim(x, y) = <br>
+        2 &times; |{p &isin; &Rho; : x &rightsquigarrow; y}| / (|{p &isin; &Rho; : x &rightsquigarrow; x}| + |{p &isin; &Rho; : y &rightsquigarrow; y}|)
+      </div>
+      <div style="font-size:14px;line-height:1.6;color:var(--text)">
+        Even with <b>zero watch history</b>, the metapath connecting Alice &rarr; Dark &rarr; Director &rarr; 1899 produces a PathSim score of <b>0.94</b>.<br>
+        1899 immediately jumps to the #1 billboard on Alice's homepage at launch!
+      </div>
+    </div>
+  `,48,415,1184,180);
 
-      const progress = ((currentSlide + 1) / totalSlides) * 100;
-      slideProgressBar.style.width = `${progress}%`;
+  return c},steps:[
+  {say:"What happens when Netflix releases a brand-new original series? It has zero views and zero ratings. In a traditional bipartite graph, it's an isolated island.",run:c=>show(c.coldCard)},
+  {say:"To fix this, Netflix constructs a Heterogeneous Information Network. They connect titles to Directors, Actors, Genres, and Language tags.",run:c=>show(c.hinCard)},
+  {say:"Now we can define 'Metapaths'. Notice the path: Alice watched Dark, which was directed by Baran bo Odar. Baran bo Odar also directed 1899.",run:c=>c.hinCard.classList.add("act")},
+  {say:"Using PathSim, Netflix calculates that Alice has a 94% affinity for 1899 before a single subscriber has streamed it. Cold start is solved.",run:c=>show(c.pathsim)}
+]});
 
-      btnPrevSlide.disabled = currentSlide === 0;
-      btnNextSlide.disabled = currentSlide === totalSlides - 1;
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. GRAPH NEURAL NETWORKS & MESSAGE PASSING
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Graph Neural Networks (PinSage / LightGCN)",build(s){
+  const c={};title(s,"06 · Deep Graph Learning","Multi-Hop Convolution & Neighborhood Message Passing");
+  c.svg=wires(s);
 
-      // Trigger custom animations on specific slides
-      if (currentSlide === 4) {
-        initFunnelAnimation();
-      }
-    }
+  c.layer0=put(s,"card fx l",`
+    <h4>Layer 0: Raw Node Features x<sub>v</sub></h4>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Static entity features before graph propagation:</div>
+    <div class="chip red">Genre Vector [0.8, 0.1, 0.9]</div>
+    <div class="chip accent">Release Year (2022)</div>
+    <div class="chip green">Maturity Rating (TV-MA)</div>
+    <div class="chip amber">Language (de-DE)</div>
+  `,48,100,320,200);
 
-    btnPrevSlide.addEventListener('click', () => goToSlide(currentSlide - 1));
-    btnNextSlide.addEventListener('click', () => goToSlide(currentSlide + 1));
+  c.layer1=put(s,"card fx p",`
+    <h4>Layer 1: 1-Hop Message Passing</h4>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Aggregate direct subscriber embeddings:</div>
+    <div class="formula-box" style="font-size:12px;padding:10px">
+      h<sub>v</sub><sup>(1)</sup> = AGG({h<sub>u</sub><sup>(0)</sup> : u &in; N(v)})
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px">
+      Aggregates viewing patterns of all users who streamed <i>Dark</i>.
+    </div>
+  `,400,100,440,200);
 
-    // Keyboard Controller
-    window.addEventListener('keydown', (e) => {
-      if (gridOverlay.classList.contains('active')) {
-        if (e.key === 'Escape' || e.key === 'g' || e.key === 'G') {
-          closeOverview();
-        }
-        return;
-      }
+  c.layer2=put(s,"card fx r",`
+    <h4>Layer 2: 2-Hop Network Context</h4>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Captures global structural taste clusters:</div>
+    <div class="formula-box" style="font-size:12px;padding:10px">
+      z<sub>v</sub> = W &bull; [ h<sub>v</sub><sup>(0)</sup> || h<sub>v</sub><sup>(1)</sup> || h<sub>v</sub><sup>(2)</sup> ]
+    </div>
+    <div style="font-size:13px;color:var(--text);margin-top:10px">
+      Produces final 64-dimensional latent embedding vector in continuous metric space.
+    </div>
+  `,872,100,360,200);
 
-      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
-        goToSlide(currentSlide + 1);
-      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-        goToSlide(currentSlide - 1);
-      } else if (e.key === 'Home') {
-        goToSlide(0);
-      } else if (e.key === 'End') {
-        goToSlide(totalSlides - 1);
-      } else if (e.key === 'g' || e.key === 'G') {
-        openOverview();
-      } else if (e.key === 't' || e.key === 'T') {
-        toggleTheme();
-      } else if (e.key === 'f' || e.key === 'F') {
-        toggleFullScreen();
-      } else if (e.key === 'p' || e.key === 'P') {
-        toggleAutoPlay();
-      }
-    });
+  c.box=put(s,"card fx alt",`
+    <h4>The Non-Linear Edge: Why GNNs Outperform Classical Matrix Factorization</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:12px">
+      <div>
+        <div style="font-weight:700;color:var(--red);font-size:14px;margin-bottom:4px">1. Non-Linear Feature Fusion</div>
+        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Combines graph connectivity with rich textual, visual, and behavioral metadata simultaneously.</p>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--accent);font-size:14px;margin-bottom:4px">2. Inductive Generalization</div>
+        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Can immediately generate embeddings for new items and users by simply passing messages from neighbors.</p>
+      </div>
+      <div>
+        <div style="font-weight:700;color:var(--green);font-size:14px;margin-bottom:4px">3. Sub-Millisecond MIPS</div>
+        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Once embeddings z<sub>u</sub> and z<sub>v</sub> are computed, retrieval is a fast inner product: argmax (z<sub>u</sub> &bull; z<sub>v</sub>).</p>
+      </div>
+    </div>
+  `,48,330,1184,180);
 
-    // -------------------------------------------------------------
-    // SLIDE OVERVIEW GRID (KEY G)
-    // -------------------------------------------------------------
-    const gridOverlay = document.getElementById('gridOverlay');
-    const overviewGrid = document.getElementById('overviewGrid');
-    const btnOverview = document.getElementById('btnOverview');
-    const btnCloseOverview = document.getElementById('btnCloseOverview');
+  return c},steps:[
+  {say:"Modern production systems at Netflix, Pinterest, and Uber use Graph Neural Networks like PinSage and LightGCN.",run:c=>show(c.layer0)},
+  {say:"In Layer 1, every title aggregates feature messages from all subscribers who watched it.",run:c=>show(c.layer1)},
+  {say:"In Layer 2, it aggregates messages from their extended watch history. Two hops of message passing captures over 90% of graph structural information.",run:c=>show(c.layer2)},
+  {say:"The final output is a 64-dimensional embedding vector. Retrieval across 15,000 titles is reduced to a lightning-fast dot product.",run:c=>show(c.box)}
+]});
 
-    function buildOverviewGrid() {
-      overviewGrid.innerHTML = '';
-      slidesData.forEach((s, idx) => {
-        const thumb = document.createElement('div');
-        thumb.className = `grid-thumb ${idx === currentSlide ? 'active' : ''}`;
-        thumb.innerHTML = `
-          <div class="grid-thumb-num">SLIDE ${String(idx + 1).padStart(2, '0')}</div>
-          <div class="grid-thumb-title">${s.title}</div>
-        `;
-        thumb.addEventListener('click', () => {
-          goToSlide(idx);
-          closeOverview();
-        });
-        overviewGrid.appendChild(thumb);
-      });
-    }
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. SPECTRAL GRAPH THEORY & LAPLACIAN
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Matrix Factorization as Graph Laplacian Smoothing",build(s){
+  const c={};title(s,"07 · Spectral Graph Theory","Why Matrix Factorization is Laplacian Dirichlet Smoothing");
 
-    function openOverview() {
-      buildOverviewGrid();
-      gridOverlay.classList.add('active');
-    }
+  c.lap=put(s,"formula-box fx",`
+    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">THE UNNORMALIZED GRAPH LAPLACIAN MATRIX</div>
+    L = D - A
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      &bull; D = Diagonal degree matrix (D<sub>ii</sub> = &sum;<sub>j</sub> A<sub>ij</sub>)<br>
+      &bull; A = Symmetric adjacency matrix of the bipartite graph
+    </div>
+  `,48,100,560,140);
 
-    function closeOverview() {
-      gridOverlay.classList.remove('active');
-    }
+  c.dirichlet=put(s,"card fx r",`
+    <h4>The Dirichlet Energy on Graphs</h4>
+    <div class="formula-box" style="font-size:13px;margin-bottom:10px">
+      E(Z) = 1/2 &sum;<sub>(i,j) &in; E</sub> w<sub>ij</sub> ||z<sub>i</sub> - z<sub>j</sub>||<sup>2</sup> = Tr(Z<sup>T</sup> L Z)
+    </div>
+    <div style="font-size:13.5px;color:var(--text);line-height:1.6">
+      Minimizing Dirichlet energy forces connected nodes (Alice and Dark) to be mapped to virtually identical coordinates in embedding space Z.<br>
+      High energy = high-frequency graph noise. Low energy = smooth latent taste dimensions.
+    </div>
+  `,640,100,592,200);
 
-    btnOverview.addEventListener('click', openOverview);
-    btnCloseOverview.addEventListener('click', closeOverview);
+  c.unify=put(s,"card fx glow-amber",`
+    <h4>The Grand Theoretical Unification</h4>
+    <div style="font-size:15px;line-height:1.65;color:var(--text)">
+      When engineers perform classical <b>Singular Value Decomposition (SVD)</b> or <b>Matrix Factorization</b> (R &approx; P &bull; Q<sup>T</sup>), they are not just doing matrix math.<br>
+      <span class="t-amber" style="font-weight:700">They are computing the lowest-frequency eigenvectors of the Graph Laplacian.</span><br>
+      Collaborative filtering is literally low-pass Fourier filtering on graph signals!
+    </div>
+  `,48,325,1184,180);
 
-    // -------------------------------------------------------------
-    // FULLSCREEN & THEME TOGGLE
-    // -------------------------------------------------------------
-    const btnFullscreen = document.getElementById('btnFullscreen');
-    function toggleFullScreen() {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      } else {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
-    btnFullscreen.addEventListener('click', toggleFullScreen);
+  return c},steps:[
+  {say:"Let's bridge classical machine learning and graph theory through the Graph Laplacian matrix: L = D minus A.",run:c=>show(c.lap)},
+  {say:"The Dirichlet Energy measures how much an embedding changes across graph edges. Minimizing it ensures that people who watch the same shows sit close together in vector space.",run:c=>show(c.dirichlet)},
+  {say:"This brings us to a beautiful mathematical truth: classical matrix factorization is simply finding the low-frequency harmonics of the Graph Laplacian.",run:c=>show(c.unify)}
+]});
 
-    const btnThemeToggle = document.getElementById('btnThemeToggle');
-    const themeLabel = document.getElementById('themeLabel');
-    function toggleTheme() {
-      const cur = document.body.getAttribute('data-theme') || 'dark';
-      const nxt = cur === 'dark' ? 'light' : 'dark';
-      document.body.setAttribute('data-theme', nxt);
-      themeLabel.textContent = nxt === 'dark' ? 'Light' : 'Dark';
-    }
-    btnThemeToggle.addEventListener('click', toggleTheme);
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. COMMUNITY DETECTION & MICRO-GENRES
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Community Detection & 76,000 Micro-Genres",build(s){
+  const c={};title(s,"08 · Graph Clustering","Discovering Netflix Micro-Genres via Louvain Modularity Optimization");
 
-    // -------------------------------------------------------------
-    // AUTO ADVANCE SLIDES (KEY P)
-    // -------------------------------------------------------------
-    const btnAutoPlay = document.getElementById('btnAutoPlay');
-    const autoPlayText = document.getElementById('autoPlayText');
-    const autoPlayIcon = document.getElementById('autoPlayIcon');
+  c.math=put(s,"formula-box fx",`
+    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">LOUVAIN GRAPH MODULARITY Q</div>
+    Q = 1/(2m) &sum;<sub>ij</sub> [ A<sub>ij</sub> - (k<sub>i</sub> k<sub>j</sub>)/(2m) ] &delta;(c<sub>i</sub>, c<sub>j</sub>)
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">
+      Compares actual internal edge density within cluster c against the expected density under a random configuration model.
+    </div>
+  `,48,100,1184,120);
 
-    function toggleAutoPlay() {
-      if (autoPlayInterval) {
-        clearInterval(autoPlayInterval);
-        autoPlayInterval = null;
-        btnAutoPlay.classList.remove('active');
-        autoPlayText.textContent = "Auto";
-        autoPlayIcon.innerHTML = "&blacktriangleright;";
-      } else {
-        btnAutoPlay.classList.add('active');
-        autoPlayText.textContent = "Stop";
-        autoPlayIcon.innerHTML = "&block;";
-        autoPlayInterval = setInterval(() => {
-          if (currentSlide < totalSlides - 1) {
-            goToSlide(currentSlide + 1);
-          } else {
-            goToSlide(0);
-          }
-        }, 8000);
-      }
-    }
-    btnAutoPlay.addEventListener('click', toggleAutoPlay);
+  const CLUSTERS=[
+    {name:"Cluster A: Psychological Mind-Benders",col:"var(--red)",items:["Dark", "Black Mirror", "Stranger Things", "Alice", "Bob"],desc:"Dense internal triangles. High completion rates on time-travel & dystopian themes."},
+    {name:"Cluster B: High-Tension Survival",col:"var(--green)",items:["Squid Game", "Alice in Borderland", "All of Us Are Dead", "Charlie"],desc:"Strong cross-border Asian thriller community. Extremely high binge-velocity."},
+    {name:"Cluster C: Prestige Historical Drama",col:"var(--amber)",items:["The Crown", "Bridgerton", "Downton Abbey", "Diana"],desc:"Separated by high modularity cut. Zero overlap with Cluster B survival thrillers."}
+  ];
 
-    // -------------------------------------------------------------
-    // SLIDE 3: ANIMATED MATRIX FACTORIZATION CALCULATION
-    // -------------------------------------------------------------
-    const btnRunMatrixAnim = document.getElementById('btnRunMatrixAnim');
-    const pCell0 = document.getElementById('pCell0');
-    const pCell1 = document.getElementById('pCell1');
-    const pCell2 = document.getElementById('pCell2');
-    const qCell0 = document.getElementById('qCell0');
-    const qCell1 = document.getElementById('qCell1');
-    const qCell2 = document.getElementById('qCell2');
-    const rTargetCell = document.getElementById('rTargetCell');
-    const matrixCalcLog = document.getElementById('matrixCalcLog');
+  c.cards=CLUSTERS.map((cl,i)=>put(s,"card fx",`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="width:12px;height:12px;border-radius:3px;background:${cl.col}"></div>
+      <h4 style="margin:0;color:#fff;font-size:13px">${cl.name}</h4>
+    </div>
+    <div style="margin:10px 0">
+      ${cl.items.map(x=>`<span class="chip" style="font-size:12px">${x}</span>`).join("")}
+    </div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.5">${cl.desc}</div>
+  `,48+i*402,240,380,240));
 
-    let matrixAnimStep = 0;
-    btnRunMatrixAnim.addEventListener('click', () => {
-      matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 1: Multiplying Factor 1 &rarr; (0.9 &times; 0.8) = 0.72...</span>`;
-      pCell0.style.outline = "3px solid #ffffff";
-      qCell0.style.outline = "3px solid #ffffff";
+  c.quote=put(s,"card fx alt",`
+    <div style="font-size:15px;line-height:1.6;color:var(--text);text-align:center">
+      Netflix doesn't use static genres like "Action" or "Drama".<br>
+      They discover over <b>76,000 algorithmic micro-genres</b> by partitioning the global interaction graph using modularity optimization.
+    </div>
+  `,48,505,1184,100);
 
-      setTimeout(() => {
-        matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 2: Adding Factor 2 &rarr; 0.72 + (0.1 &times; 0.2) = 0.74...</span>`;
-        pCell0.style.outline = "none";
-        qCell0.style.outline = "none";
-        pCell1.style.outline = "3px solid #ffffff";
-        qCell1.style.outline = "3px solid #ffffff";
-      }, 700);
+  return c},steps:[
+  {say:"Why does Netflix have hyper-specific categories like 'Cerebral Scandinavian Mystery' instead of just 'Drama'? The answer is Graph Community Detection.",run:c=>show(c.math)},
+  {say:"Using the Louvain Modularity algorithm, Netflix partitions the 260 million subscriber graph into thousands of tightly knit taste communities.",run:c=>show(stag(c.cards,.15))},
+  {say:"These clusters form the horizontal rows you see on your screen every evening.",run:c=>show(c.quote)}
+]});
 
-      setTimeout(() => {
-        matrixCalcLog.innerHTML = `<span style="opacity: 0.5;">Step 3: Adding Factor 3 &rarr; 0.74 + (0.7 &times; 0.9) = 1.37...</span>`;
-        pCell1.style.outline = "none";
-        qCell1.style.outline = "none";
-        pCell2.style.outline = "3px solid #ffffff";
-        qCell2.style.outline = "3px solid #ffffff";
-      }, 1400);
+// ─────────────────────────────────────────────────────────────────────────────
+// 9. DYNAMIC EDGE STREAMING
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Real-Time Streaming Graph Updates",build(s){
+  const c={};title(s,"09 · Dynamic Graph Streams","Local Push Edge Ingestion in Under 15 Milliseconds");
 
-      setTimeout(() => {
-        pCell2.style.outline = "none";
-        qCell2.style.outline = "none";
-        rTargetCell.style.transform = "scale(1.3)";
-        matrixCalcLog.innerHTML = `COMPLETE: Latent Dot Product + Global Bias &mu; = <strong>4.75 / 5.0 Rating Predicted!</strong>`;
-        setTimeout(() => { rTargetCell.style.transform = "scale(1.15)"; }, 400);
-      }, 2100);
-    });
+  c.event=put(s,"card fx l",`
+    <div class="badge red" style="margin-bottom:8px">Live Stream Event e<sub>t</sub></div>
+    <div class="mono" style="font-size:13.5px;color:var(--text);line-height:1.7">
+      timestamp: 23:42:10 UTC<br>
+      user_id: u1_Alice<br>
+      item_id: v4_SquidGame<br>
+      action: "SEASON_FINALE_COMPLETED"<br>
+      telemetry: {completion: 1.0, duration_h: 8.4}
+    </div>
+  `,48,100,420,200);
 
-    // -------------------------------------------------------------
-    // SLIDE 5: LIVE FUNNEL PARTICLE SIMULATION (CANVAS)
-    // -------------------------------------------------------------
-    let funnelCanvasInitialized = false;
-    function initFunnelAnimation() {
-      if (funnelCanvasInitialized) return;
-      funnelCanvasInitialized = true;
+  c.pipe=put(s,"card fx p",`
+    <h4>Incremental Local Push (Andersen-Chung-Lang)</h4>
+    <div style="font-size:13.5px;color:var(--muted);margin-bottom:10px">
+      Recomputing Personalized PageRank over the entire 260M graph would take hours. Instead, Netflix runs an <b>incremental local push</b>:
+    </div>
+    <div class="chip green">1. Push probability mass only to 1-hop & 2-hop neighbors</div>
+    <div class="chip accent">2. Stop when residual error r(v) &le; &epsilon; (10<sup>-5</sup>)</div>
+    <div class="chip violet">3. Update latency: <b>12 ms on Apache Flink</b></div>
+  `,490,100,742,200);
 
-      const canvas = document.getElementById('funnelCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
+  c.result=put(s,"card fx glow-teal",`
+    <h4>Instant UI Adaptation</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
+      <div style="font-size:14px;line-height:1.6;color:var(--text)">
+        At 11:42 PM, Alice closes Squid Game.<br>
+        Her local graph neighborhood shifts dynamically. By 11:42:01 PM, her top row dynamically populates with <i>Alice in Borderland</i> and <i>All of Us Are Dead</i>.
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="chip green" style="justify-content:space-between"><span>Alice in Borderland</span><b style="color:#10b981">+340% Boost</b></div>
+        <div class="chip green" style="justify-content:space-between"><span>All of Us Are Dead</span><b style="color:#10b981">+285% Boost</b></div>
+      </div>
+    </div>
+  `,48,330,1184,170);
 
-      function resize() {
-        canvas.width = canvas.parentElement.clientWidth;
-        canvas.height = canvas.parentElement.clientHeight;
-      }
-      resize();
-      window.addEventListener('resize', resize);
+  return c},steps:[
+  {say:"A graph is not a static museum piece. Every second, millions of streaming edge events arrive across Kafka.",run:c=>show(c.event)},
+  {say:"How do you update PageRank without crashing the servers? You run an incremental local push algorithm on Apache Flink.",run:c=>show(c.pipe)},
+  {say:"It updates only the local 2-hop subgraph around Alice in 12 milliseconds, refreshing her recommendations before she picks up the remote.",run:c=>show(c.result)}
+]});
 
-      const particles = [];
-      const numParticles = 75;
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. PRODUCTION SYSTEM ARCHITECTURE
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Production Blueprint: Serving 260M Subgraphs",build(s){
+  const c={};title(s,"10 · Production Architecture","Serving 260M Graphs at Sub-15ms Latency");
 
-      for (let i = 0; i < numParticles; i++) {
-        particles.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * (canvas.height * 0.25),
-          vx: (Math.random() - 0.5) * 0.8,
-          vy: Math.random() * 1.5 + 1.0,
-          radius: Math.random() * 2 + 1,
-          alpha: Math.random() * 0.7 + 0.3
-        });
-      }
+  const STAGES=[
+    {num:"01",title:"Edge Ingestion",sub:"Kafka (1.2M events/sec) &bull; Flink Stream Processor &bull; Live Edge Writer",c:"var(--red)"},
+    {num:"02",title:"Graph Store",sub:"In-Memory Partitioned Adjacency Store &bull; RocksDB + C++ GraphJet Engine",c:"var(--accent)"},
+    {num:"03",title:"Retrieval (MIPS)",sub:"HNSW Vector Graph Index &bull; PinSage Embeddings &bull; 15,000 &rarr; 200 Candidates",c:"var(--cyan)"},
+    {num:"04",title:"Ranker & Bandits",sub:"Deep Neural Ranking &bull; LinUCB Dynamic Artwork Personalization",c:"var(--green)"},
+    {num:"05",title:"Edge Gateway",sub:"Envoy gRPC Proxy &bull; Client TV App &bull; p99 Latency &le; 15 ms",c:"var(--amber)"}
+  ];
 
-      function draw() {
-        ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+  c.cols=STAGES.map((st,i)=>put(s,"card fx",`
+    <div style="font:800 14px 'JetBrains Mono',monospace;color:${st.c};margin-bottom:8px">${st.num}</div>
+    <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px">${st.title}</div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">${st.sub}</div>
+  `,48+i*242,100,226,240));
 
-        const w = canvas.width;
-        const h = canvas.height;
+  c.metrics=[
+    {v:"260M",l:"Active Subgraphs"},
+    {v:"15k",l:"Catalog Vertices"},
+    {v:"< 15ms",l:"p99 Serving SLA"},
+    {v:"99.999%",l:"Availability"}
+  ].map((m,i)=>put(s,"card fx alt",`
+    <div class="mono" style="font-size:32px;font-weight:800;color:#fff">${m.v}</div>
+    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">${m.l}</div>
+  `,48+i*300,370,282,100));
 
-        // Funnel boundary lines in monochrome
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(w * 0.1, 20);
-        ctx.lineTo(w * 0.42, h - 30);
-        ctx.lineTo(w * 0.58, h - 30);
-        ctx.lineTo(w * 0.9, 20);
-        ctx.stroke();
+  return c},steps:[
+  {say:"Here is the complete end-to-end production architecture that powers the Netflix graph.",run:c=>show(stag(c.cols,.1))},
+  {say:"Events enter via Kafka, update an in-memory graph engine, trigger vector retrieval via HNSW graph indexing, and pass through contextual bandits.",run:c=>show(stag(c.metrics,.1))}
+]});
 
-        // Stage dividing dotted lines
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-        [0.25, 0.5, 0.75].forEach(pct => {
-          ctx.beginPath();
-          ctx.moveTo(w * 0.15, h * pct);
-          ctx.lineTo(w * 0.85, h * pct);
-          ctx.stroke();
-        });
-        ctx.setLineDash([]);
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. SUMMARY & GRAND LAWS
+// ─────────────────────────────────────────────────────────────────────────────
+SCENES.push({name:"Summary: The Laws of Graph Recommendation",build(s){
+  const c={};title(s,"11 · The Grand Summary","Six Foundational Laws of Graph Recommenders");
 
-        // Update & draw particles
-        particles.forEach(p => {
-          p.y += p.vy;
-          p.x += p.vx;
+  const LAWS=[
+    ["01","Bipartite Duality","Users and media items are dual reflections of the same topological space."],
+    ["02","Paths are Explanations","Two-hop walks replace unexplainable black-box matrices with auditable human provenance."],
+    ["03","Random Walks Beat Cross-Products","Personalized PageRank explores dense local taste clusters without O(N^2) memory blowups."],
+    ["04","Cold Start Demands Heterogeneity","Adding typed director, actor, and genre vertices bridges isolated zero-view titles."],
+    ["05","Message Passing Embeds Context","Graph Neural Networks convolve high-order structural neighborhoods into continuous 64D vectors."],
+    ["06","Real-Time is Incremental Push","Streaming edge events reweight local subgraphs in sub-15ms using localized residual pushes."]
+  ];
 
-          // Funnel squeeze geometry
-          const progress = p.y / h;
-          const currentWidth = (1 - progress * 0.75) * (w * 0.4);
-          const minX = w * 0.5 - currentWidth;
-          const maxX = w * 0.5 + currentWidth;
+  c.grid=LAWS.map(([n,h,p],i)=>put(s,"card fx",`
+    <div style="font:700 13px 'JetBrains Mono',monospace;color:var(--red);margin-bottom:4px">${n}</div>
+    <h3 style="margin:0 0 6px;font-size:16px;color:#fff">${h}</h3>
+    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5">${p}</p>
+  `,48+(i%3)*402,100+Math.floor(i/3)*170,380,150));
 
-          if (p.x < minX) p.x = minX + 2;
-          if (p.x > maxX) p.x = maxX - 2;
+  c.end=put(s,"card fx glow-teal",`
+    <div style="font-size:18px;text-align:center;line-height:1.6;color:#fff">
+      <b>A Netflix recommendation is not a database query.</b><br>
+      It is finding the minimum-resistance path in an evolving, heterogeneous bipartite graph.
+    </div>
+  `,48,460,1184,110);
 
-          // Prune particles at lower stages to show funnel reduction
-          if (progress > 0.4 && p.alpha > 0.6) p.alpha -= 0.01;
-          if (progress > 0.75 && p.radius > 1.5) p.radius -= 0.02;
+  return c},steps:[
+  {say:"To summarize everything we've walked through: here are the six laws of graph recommendation systems.",run:c=>show(stag(c.grid,.08))},
+  {say:"A Netflix recommendation is not a database query. It is finding the minimum-resistance path in an evolving, heterogeneous bipartite graph. Thank you, and I am ready for questions.",run:c=>show(c.end)}
+]});
 
-          if (p.y > h - 20) {
-            // Reset to top
-            p.y = 10;
-            p.x = w * 0.5 + (Math.random() - 0.5) * (w * 0.7);
-            p.radius = Math.random() * 2 + 1;
-            p.alpha = Math.random() * 0.8 + 0.2;
-          }
+// ─────────────────────────────────────────────────────────────────────────────
+// PLAYER CONTROLLER & ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+const FLAT=[];SCENES.forEach((sc,si)=>sc.steps.forEach((st,ki)=>FLAT.push({si,ki,st})));
+const sceneStart=SCENES.map((_,si)=>FLAT.findIndex(f=>f.si===si));
+const $=id=>document.getElementById(id);
+let cur=-1,applied=-1,curScene=-1,ctx=null;
 
-          ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fill();
-        });
+const prog=$("prog"),segs=SCENES.map((sc,si)=>{
+  const g=mk("div","seg","<i></i>");g.style.setProperty("--n",sc.steps.length);g.title=`${si+1}. ${sc.name}`;
+  g.onclick=e=>{e.stopPropagation();goto(sceneStart[si])};prog.appendChild(g);return g;
+});
 
-        requestAnimationFrame(draw);
-      }
-      draw();
-    }
+function goto(i,still){
+  i=Math.max(0,Math.min(FLAT.length-1,i));
+  const {si,ki,st}=FLAT[i];
+  if(si!==curScene||ki!==applied+1){
+    GEN++;stage.innerHTML="";stage.classList.add("instant");INSTANT=true;
+    BUILD_IDX=si+1;ctx=SCENES[si].build(stage)||{};curScene=si;
+    for(let j=0;j<ki;j++)SCENES[si].steps[j].run(ctx);
+    if(ki>0)stage.querySelectorAll(".stitle").forEach(e=>e.classList.add("in"));
+    void stage.offsetWidth;INSTANT=false;
+  }
+  if(still){INSTANT=true;stage.classList.add("instant")}
+  else{stage.classList.remove("instant");void stage.offsetWidth}
+  stage.querySelectorAll(".stitle").forEach(e=>e.classList.add("in"));
+  st.run(ctx);INSTANT=false;applied=ki;cur=i;
+  if(still){void stage.offsetWidth;stage.classList.remove("instant")}
+  $("chap").innerHTML=`<b>${String(si+1).padStart(2,"0")}</b> &nbsp;${SCENES[si].name}`;
+  $("count").textContent=`${si+1} / ${SCENES.length}`;
+  $("notes").innerHTML=`<small>Notes &bull; Step ${ki+1} of ${SCENES[si].steps.length}</small>${st.say}`;
+  segs.forEach((g,j)=>g.firstChild.style.width=j<si?"100%":j>si?"0%":((ki+1)/SCENES[si].steps.length*100)+"%");
+  [...$("menu").children].forEach((b,j)=>b.classList.toggle("cur",j===si));
+}
 
-    // -------------------------------------------------------------
-    // SLIDE 7: NETFLIX ARTWORK BANDIT PERSONA CONTROLLER
-    // -------------------------------------------------------------
-    const banditPersonas = {
-      action: {
-        title: "PULP FICTION",
-        label: "Arm 01: Gun Duel Standoff (Highest Action Affinity)",
-        ctr: "23.4%",
-        ucb: "0.984",
-        svg: `
-          <rect width="320" height="180" fill="#000000"/>
-          <circle cx="160" cy="90" r="60" stroke="#ffffff" stroke-width="2" fill="none" stroke-dasharray="4,4"/>
-          <line x1="80" y1="90" x2="240" y2="90" stroke="#ffffff" stroke-width="2"/>
-          <line x1="160" y1="20" x2="160" y2="160" stroke="#ffffff" stroke-width="2"/>
-          <polygon points="120,80 140,80 135,110 115,110" fill="#ffffff"/>
-          <polygon points="200,80 180,80 185,110 205,110" fill="#ffffff"/>
-          <text x="160" y="145" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ACTION STANDOFF ARM]</text>
-        `
-      },
-      romance: {
-        title: "GOOD WILL HUNTING",
-        label: "Arm 02: Romantic Conversation (High Drama Affinity)",
-        ctr: "19.8%",
-        ucb: "0.932",
-        svg: `
-          <rect width="320" height="180" fill="#000000"/>
-          <circle cx="130" cy="80" r="32" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <circle cx="190" cy="80" r="32" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <path d="M110,130 Q160,105 210,130" stroke="#ffffff" stroke-width="3" fill="none"/>
-          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ROMANCE / DRAMA ARM]</text>
-        `
-      },
-      uma: {
-        title: "PULP FICTION",
-        label: "Arm 03: Uma Thurman Close-Up Portrait (Star Actor Arm)",
-        ctr: "26.1%",
-        ucb: "0.995",
-        svg: `
-          <rect width="320" height="180" fill="#000000"/>
-          <ellipse cx="160" cy="80" rx="42" ry="52" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <line x1="135" y1="75" x2="150" y2="75" stroke="#ffffff" stroke-width="2"/>
-          <line x1="170" y1="75" x2="185" y2="75" stroke="#ffffff" stroke-width="2"/>
-          <path d="M145,105 Q160,115 175,105" stroke="#ffffff" stroke-width="2" fill="none"/>
-          <text x="160" y="150" text-anchor="middle" fill="#ffffff" font-family="'Geist Mono'" font-size="9" letter-spacing="2">[ACTOR-AFFINITY ARM]</text>
-        `
-      }
-    };
+const next=()=>goto(cur+1),prev=()=>goto(cur-1);
+const sceneJump=d=>{const si=Math.max(0,Math.min(SCENES.length-1,(cur>=0?FLAT[cur].si:0)+d));goto(sceneStart[si])};
 
-    function switchBanditPersona(type) {
-      document.querySelectorAll('#btnP1, #btnP2, #btnP3').forEach(b => b.classList.remove('active'));
-      if (type === 'action') document.getElementById('btnP1').classList.add('active');
-      if (type === 'romance') document.getElementById('btnP2').classList.add('active');
-      if (type === 'uma') document.getElementById('btnP3').classList.add('active');
+// Controls setup
+const menu=$("menu"),help=$("help"),notes=$("notes");
+SCENES.forEach((sc,si)=>{
+  const b=mk("button","",`<span>${String(si+1).padStart(2,"0")}</span>${sc.name}`);
+  b.onclick=()=>{goto(sceneStart[si]);menu.hidden=true};
+  menu.appendChild(b);
+});
 
-      const data = banditPersonas[type];
-      document.getElementById('banditMovieTitle').textContent = data.title;
-      document.getElementById('banditArmLabel').textContent = data.label;
-      document.getElementById('banditCtrVal').textContent = data.ctr;
-      document.getElementById('banditUcbVal').textContent = data.ucb;
-      document.getElementById('banditArtSvg').innerHTML = data.svg;
-    }
+$("bPrev").onclick=prev;$("bNext").onclick=next;
+$("bMenu").onclick=()=>{menu.hidden=!menu.hidden;help.hidden=true};
+$("bNotes").onclick=()=>{notes.hidden=!notes.hidden;$("bNotes").classList.toggle("on",!notes.hidden)};
+$("bHelp").onclick=()=>{help.hidden=!help.hidden;menu.hidden=true};
+$("viewport").onclick=()=>{if(!menu.hidden||!help.hidden){menu.hidden=help.hidden=true;return}next()};
 
-    // Interactive Term highlighter
-    const termExploit = document.getElementById('termExploit');
-    const termExplore = document.getElementById('termExplore');
-    termExploit.addEventListener('click', () => {
-      termExploit.classList.add('highlight');
-      termExplore.classList.remove('highlight');
-    });
-    termExplore.addEventListener('click', () => {
-      termExplore.classList.add('highlight');
-      termExploit.classList.remove('highlight');
-    });
+// Keyboard listener
+document.addEventListener("keydown",e=>{
+  if(e.metaKey||e.ctrlKey||e.altKey)return;
+  const k=e.key;
+  if([" ","ArrowRight","ArrowDown","PageDown","Enter"].includes(k)){e.preventDefault();next()}
+  else if(["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(k)){e.preventDefault();prev()}
+  else if(k==="]")sceneJump(1);
+  else if(k==="[")sceneJump(-1);
+  else if(k==="Home")goto(0);
+  else if(k==="End")goto(FLAT.length-1);
+  else if(k==="m"||k==="M"){menu.hidden=!menu.hidden;help.hidden=true}
+  else if(k==="n"||k==="N"){$("bNotes").click()}
+  else if(k==="h"||k==="H")document.body.classList.toggle("clean");
+  else if(k==="?")help.hidden=!help.hidden;
+  else if(k==="Escape"){menu.hidden=help.hidden=true}
+  else if(k==="f"||k==="F"){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.()}
+});
 
-    // Initialize Default Slide 0 and Default Persona
-    goToSlide(0);
-    switchBanditPersona('action');
-  </script>
+// Touch swipe support
+let tx=null;
+$("viewport").addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
+$("viewport").addEventListener("touchend",e=>{
+  if(tx==null)return;
+  const dx=e.changedTouches[0].clientX-tx;tx=null;
+  if(Math.abs(dx)>40){e.preventDefault();dx<0?next():prev()}
+});
+
+// Fit 1280x720 stage
+function fit(){
+  const v=$("viewport"),s=Math.min((v.clientWidth-24)/1280,(v.clientHeight-16)/720);
+  stage.style.transform=`translate(-50%,-50%) scale(${Math.max(.1,s)})`;
+}
+addEventListener("resize",fit);fit();
+
+// Deep link
+const m=location.hash.match(/^#(\d+)(?:\.(\d+))?/);
+if(m){
+  const si=Math.min(SCENES.length,+m[1])-1;
+  const ki=Math.min(SCENES[si].steps.length,+(m[2]||1))-1;
+  goto(sceneStart[si]+ki,location.search.includes("still"));
+}else{
+  goto(0);
+}
+</script>
 </body>
 </html>
