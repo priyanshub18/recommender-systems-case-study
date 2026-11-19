@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Recommender Systems Work: A Graph Theory View</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#14213d; --ink:#1f2937; --muted:#5b6475; --dim:#8a92a3; --line:#dfe3ea; --soft:#f5f7fa;
+  --accent:#9b1c2c; --accent-soft:#fbeef0;
+  --blue:#1d4e89; --blue-soft:#eaf1fa;
+  --green:#1e7a4f; --green-soft:#e9f6ef;
+  --gold:#b7791f; --gold-soft:#fbf4e6;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#e8ebf0;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit}
+
+/* ---------- chrome ---------- */
+#viewport{flex:1;position:relative;overflow:hidden;cursor:pointer}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;background:#fff;
+  box-shadow:0 12px 40px rgba(20,33,61,.16);overflow:hidden}
+footer{flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:0 20px;background:#fff;border-top:1px solid var(--line)}
+.btn{height:34px;min-width:36px;padding:0 12px;border:1px solid #cdd3dd;border-radius:7px;background:#fff;cursor:pointer;
+  font-size:14px;font-weight:600;color:var(--navy);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--navy);background:var(--soft)}
+.btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn svg{width:16px;height:16px;fill:currentColor}
+#prog{flex:1;display:flex;gap:4px;align-items:center}
+#prog .seg{flex:var(--n);height:6px;border-radius:3px;background:#e3e7ee;overflow:hidden;cursor:pointer}
+#prog .seg i{display:block;height:100%;width:0;background:var(--navy);transition:width .3s}
+#count{font-size:14px;color:var(--muted);min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
+#notes{position:fixed;left:20px;bottom:68px;width:min(560px,calc(100vw - 40px));background:#fff;border:1px solid var(--line);
+  border-left:4px solid var(--accent);border-radius:8px;padding:14px 16px;font-size:16px;line-height:1.55;color:var(--ink);
+  box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:20}
+#notes small{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+#menu{position:fixed;right:20px;bottom:68px;width:min(380px,calc(100vw - 40px));max-height:70vh;overflow:auto;background:#fff;
+  border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:21}
+#menu button{display:flex;gap:10px;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:6px;cursor:pointer;font-size:15px}
+#menu button:hover{background:var(--soft)}
+#menu button.cur{background:var(--blue-soft);color:var(--blue);font-weight:600}
+#menu span{color:var(--dim);min-width:22px;font-variant-numeric:tabular-nums}
+#help{position:fixed;right:20px;bottom:68px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;
+  font-size:14px;line-height:2;color:var(--muted);box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:22}
+kbd{font:500 12px var(--mono);border:1px solid #cdd3dd;border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--ink);background:var(--soft)}
+/* fullscreen: only the slide */
+body.fs{background:#fff}
+body.fs footer,body.fs #notes,body.fs #menu,body.fs #help{display:none!important}
+body.fs #stage{box-shadow:none}
+@media (max-width:700px){.btn .t{display:none}}
+
+/* ---------- slide layout (flow layout: nothing absolutely overlaps) ---------- */
+.slide{position:absolute;inset:0;padding:46px 72px 74px 84px;display:flex;flex-direction:column}
+.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;background:var(--navy)}
+.head{flex:none}
+.kicker{font:700 13px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.title{font:600 38px/1.15 var(--serif);color:var(--navy);margin:10px 0 0;letter-spacing:-.01em}
+.rule{height:2px;background:var(--line);margin-top:16px;position:relative}
+.rule::after{content:"";position:absolute;left:0;top:0;height:2px;width:90px;background:var(--accent)}
+.body{flex:1;min-height:0;margin-top:24px;overflow:hidden}
+.sfoot{position:absolute;left:84px;right:72px;bottom:24px;display:flex;justify-content:space-between;
+  font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:10px}
+
+.two{display:grid;grid-template-columns:540px 1fr;gap:44px;height:100%;align-items:center}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+/* reveal */
+.r{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.r.on{opacity:1;transform:none}
+svg .r{transform:none}
+.instant,.instant *{transition:none!important}
+
+/* text blocks */
+.lead{font-size:21px;line-height:1.5;color:var(--ink);margin:0}
+.small{font-size:15px;color:var(--muted);line-height:1.5}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px 20px;background:#fff}
+.card.tint{background:var(--soft)}
+.card h3{font:600 21px/1.25 var(--serif);color:var(--navy);margin:0 0 8px}
+.card p{margin:0;font-size:17px;line-height:1.5;color:var(--ink)}
+.card .tag{display:inline-block;font:700 12px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 8px 8px 0;font-size:19px;line-height:1.45}
+.callout.blue{border-color:var(--blue);background:var(--blue-soft)}
+.callout.green{border-color:var(--green);background:var(--green-soft)}
+.callout.gold{border-color:var(--gold);background:var(--gold-soft)}
+.def{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:12px 4px;border-bottom:1px solid var(--line);align-items:baseline}
+.def b{font:600 20px var(--serif);color:var(--navy)}
+.def span{font-size:18px;line-height:1.45}
+.def i{font-style:normal;color:var(--muted)}
+.stat{text-align:left}
+.stat .num{font:700 44px/1.05 var(--serif);color:var(--navy)}
+.stat .lab{font-size:17.5px;line-height:1.4;margin-top:10px}
+.stat .src{font-size:13px;color:var(--dim);margin-top:6px}
+.steprow{display:grid;grid-template-columns:36px 1fr;gap:14px;align-items:start}
+.steprow .n{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font:700 16px var(--sans);display:flex;align-items:center;justify-content:center}
+.steprow .n.acc{background:var(--accent)} .steprow .n.blu{background:var(--blue)}
+.steprow div:last-child{font-size:18px;line-height:1.45;padding-top:5px}
+.mono{font-family:var(--mono);font-size:14px;line-height:1.8;color:var(--ink)}
+.badge{display:inline-block;font:700 13px var(--sans);padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.badge.grey{background:var(--soft);color:var(--muted)}
+.badge.blue{background:var(--blue-soft);color:var(--blue)}
+.pt-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pt-h b{font:600 19px var(--serif);color:var(--navy)}
+
+/* bars */
+.brow{display:grid;grid-template-columns:150px 1fr 70px;gap:12px;align-items:center;height:40px}
+.brow .lab{font-size:17px;font-weight:600;text-align:right;white-space:nowrap}
+.brow .track{height:22px;background:var(--soft);border-radius:4px;overflow:hidden}
+.brow .bar{height:100%;width:0;background:var(--accent);border-radius:4px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.brow .bar.b2{background:var(--blue)}
+.brow .val{font:600 17px var(--sans);color:var(--navy);font-variant-numeric:tabular-nums}
+
+/* pipeline */
+.pbox{border:1px solid var(--line);border-top:4px solid var(--navy);border-radius:8px;padding:16px 18px;background:#fff;position:relative;height:100%}
+.pbox .k{font:700 13px var(--sans);letter-spacing:.12em;color:var(--accent)}
+.pbox h3{font:600 21px var(--serif);color:var(--navy);margin:6px 0 8px}
+.pbox p{margin:0;font-size:16.5px;line-height:1.45}
+.pbox:not(:last-child)::after{content:"→";position:absolute;right:-15px;top:42%;font-size:20px;color:var(--dim)}
+
+/* svg graph */
+svg.g{width:100%;height:auto;display:block;overflow:visible}
+svg.g .edge{stroke:#c3cad6;stroke-width:2.5;transition:stroke .4s,stroke-width .4s,opacity .45s}
+svg.g .edge.hl{stroke:var(--accent);stroke-width:5}
+svg.g .edge.hl2{stroke:var(--blue);stroke-width:5}
+svg.g .edge.dash{stroke-dasharray:6 6}
+svg.g .node{transition:opacity .45s}
+svg.g .node circle,svg.g .node rect{transition:fill .4s,stroke .4s}
+svg.g .node text{font-family:var(--sans);font-weight:600;transition:fill .4s;pointer-events:none}
+svg.g .v circle{fill:var(--navy)} svg.g .v text{fill:#fff;font-size:14px}
+svg.g .s rect{fill:#fff;stroke:var(--accent);stroke-width:2} svg.g .s text{fill:var(--ink);font-size:15px}
+svg.g .a rect{fill:var(--gold-soft);stroke:var(--gold);stroke-width:2;stroke-dasharray:5 4} svg.g .a text{fill:#7a4e0e;font-size:14.5px}
+svg.g .p circle{fill:#fff;stroke:var(--navy);stroke-width:2.5} svg.g .p text{fill:var(--navy);font-size:17px}
+svg.g .v.hl circle{fill:var(--accent)}
+svg.g .v.hl2 circle{fill:var(--blue)}
+svg.g .s.hl rect{fill:var(--accent)} svg.g .s.hl text{fill:#fff}
+svg.g .s.hl2 rect{fill:var(--blue-soft);stroke:var(--blue)}
+svg.g .p.hl circle{fill:var(--accent);stroke:var(--accent)} svg.g .p.hl text{fill:#fff}
+svg.g .a.hl rect{fill:var(--gold);stroke:var(--gold)} svg.g .a.hl text{fill:#fff}
+svg.g .fade{opacity:.22}
+svg.g .glab{font:700 12.5px var(--sans);letter-spacing:.14em;fill:var(--dim)}
+svg.g .note{font:600 13px var(--sans);fill:var(--accent)}
+svg.g #tok{fill:var(--gold);stroke:#fff;stroke-width:3}
+
+/* cover */
+.cover{padding:0}
+.cover .wrap{position:absolute;left:96px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center}
+.cover .ck{font:700 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.cover h1{font:600 54px/1.1 var(--serif);color:var(--navy);margin:18px 0 0;letter-spacing:-.015em}
+.cover .sub{font-size:22px;line-height:1.45;color:var(--muted);margin:20px 0 0}
+.cover .who{margin-top:44px;padding-top:20px;border-top:2px solid var(--line);font-size:18px;line-height:1.6}
+.cover .who b{font:600 21px var(--serif);color:var(--navy)}
+.cover .art{position:absolute;right:56px;top:110px;width:440px}
+.cover .sfoot{display:none}
+</style>
+</head>
+<body>
+
+<div id="viewport"><div id="stage"></div></div>
+
+<footer>
+  <button class="btn" id="bPrev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg><span class="t">Prev</span></button>
+  <button class="btn" id="bNext" title="Next (Space / →)"><span class="t">Next</span><svg viewBox="0 0 24 24"><path d="M10 6 8.6 7.4l4.6 4.6-4.6 4.6L10 18l6-6z"/></svg></button>
+  <div id="prog"></div>
+  <div id="count"></div>
+  <button class="btn" id="bMenu" title="Slides (M)"><span>Slides</span></button>
+  <button class="btn" id="bNotes" title="Speaker notes (N)"><span>Notes</span></button>
+  <button class="btn" id="bFull" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg><span class="t">Fullscreen</span></button>
+  <button class="btn" id="bHelp" title="Shortcuts (?)">?</button>
+</footer>
+
+<div id="notes" hidden></div>
+<div id="menu" hidden></div>
+<div id="help" hidden>
+  <div><kbd>Space</kbd> <kbd>→</kbd> next &nbsp; <kbd>←</kbd> back</div>
+  <div><kbd>F</kbd> fullscreen &nbsp; <kbd>Esc</kbd> exit</div>
+  <div><kbd>N</kbd> speaker notes &nbsp; <kbd>M</kbd> slide list</div>
+  <div><kbd>Home</kbd> first &nbsp; <kbd>End</kbd> last</div>
+</div>
+
+<script>
+// ============================================================ graph data
+const BIP={vb:"0 0 560 400",labels:[[100,24,"USERS (U)"],[420,24,"ITEMS (I)"]],
+  nodes:[
+    {id:"riya",x:100,y:78,t:"Riya",k:"v"},{id:"arjun",x:100,y:168,t:"Arjun",k:"v"},
+    {id:"sara",x:100,y:258,t:"Sara",k:"v"},{id:"dev",x:100,y:348,t:"Dev",k:"v"},
+    {id:"st",x:420,y:60,t:"Stranger Things",k:"s"},{id:"dark",x:420,y:132,t:"Dark",k:"s"},
+    {id:"bm",x:420,y:204,t:"Black Mirror",k:"s"},{id:"sg",x:420,y:276,t:"Squid Game",k:"s"},
+    {id:"crown",x:420,y:348,t:"The Crown",k:"s"}],
+  edges:[["riya","st"],["riya","dark"],["arjun","st"],["arjun","dark"],["arjun","bm"],
+         ["sara","dark"],["sara","bm"],["sara","sg"],["dev","crown"]]};
+
+function key(a,b){return [a,b].sort().join("--")}
+function graphSVG(G,opt={}){
+  const N={};G.nodes.forEach(n=>N[n.id]=n);
+  const es=G.edges.map(([a,b,s,cls])=>{const A=N[a],B=N[b];
+    return `<line id="e-${key(a,b)}" class="edge ${cls||""}${s!=null?" r":""}" ${s!=null?`data-s="${s}"`:""} x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"/>`}).join("");
+  const ns=G.nodes.map(n=>{const r=n.s!=null?` r" data-s="${n.s}`:"";
+    if(n.k==="v")return `<g id="n-${n.id}" class="node v${r}"><circle cx="${n.x}" cy="${n.y}" r="28"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`;
+    if(n.k==="p")return `<g id="n-${n.id}" class="node p${r}"><circle cx="${n.x}" cy="${n.y}" r="25"/><text x="${n.x}" y="${n.y+6}" text-anchor="middle">${n.t}</text></g>`;
+    const w=n.w||160,h=40;
+    return `<g id="n-${n.id}" class="node ${n.k}${r}"><rect x="${n.x-w/2}" y="${n.y-h/2}" width="${w}" height="${h}" rx="7"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`}).join("");
+  const ls=(G.labels||[]).map(([x,y,t,c])=>`<text class="${c||"glab"}" x="${x}" y="${y}" text-anchor="middle">${t}</text>`).join("");
+  return `<svg class="g" viewBox="${G.vb}">${ls}${es}${ns}${opt.token?`<circle id="tok" r="9" cx="-50" cy="-50"/>`:""}</svg>`;
+}
+const q=(el,id)=>el.querySelector("#"+id);
+function hl(el,list,cls="hl"){list.forEach(x=>{const id=x.includes("-")?"e-"+key(...x.split("-")):"n-"+x;const e=q(el,id);e&&e.classList.add(cls)})}
+function fade(el,list){list.forEach(x=>{const id=x.includes("-")?"e-"+key(...x.split("-")):"n-"+x;const e=q(el,id);e&&e.classList.add("fade")})}
+
+// random walk with restart: computed live, so the numbers on the slide are real
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const WALK=(()=>{const adj={};BIP.edges.forEach(([a,b])=>{(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});
+  const rnd=mulberry32(42);let cur="riya";const c={},STEPS=100000;
+  for(let i=0;i<STEPS;i++){if(rnd()<0.15)cur="riya";else{const nb=adj[cur];cur=nb[Math.floor(rnd()*nb.length)]}c[cur]=(c[cur]||0)+1}
+  const per=id=>Math.round((c[id]||0)/STEPS*1000);return {bm:per("bm"),sg:per("sg"),crown:per("crown")}})();
+
+let GEN=0;
+function animateToken(el){const g=++GEN;const tok=q(el,"tok");if(!tok)return;
+  const P={};BIP.nodes.forEach(n=>P[n.id]=n);
+  const seq=["riya","dark","sara","sg","sara","bm","arjun","st","riya"];let i=0;
+  const hop=()=>{if(g!==GEN||!document.body.contains(tok))return;
+    const a=P[seq[i]],b=P[seq[(i+1)%seq.length]];const t0=performance.now(),D=750;
+    const tick=n=>{if(g!==GEN)return;const k=Math.min(1,(n-t0)/D),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      tok.setAttribute("cx",a.x+(b.x-a.x)*e);tok.setAttribute("cy",a.y+(b.y-a.y)*e);
+      if(k<1)requestAnimationFrame(tick);else{i=(i+1)%(seq.length-1);setTimeout(hop,260)}};
+    requestAnimationFrame(tick)};
+  hop();
+}
+function bars(el){el.querySelectorAll(".bar[data-w]").forEach(b=>b.style.width=b.dataset.w+"%")}
+
+// ============================================================ slides
+const S=[];
+
+// 1 cover
+S.push({cover:true,name:"Title",body:`
+  <div class="wrap">
+    <div class="ck r" data-s="0">Graph Theory · Computer Science Seminar</div>
+    <h1 class="r" data-s="0">How Recommender<br>Systems Work</h1>
+    <p class="sub r" data-s="0">Explaining personalized recommendations with vertices, edges, paths and random walks — using Netflix as a running example.</p>
+    <div class="who r" data-s="1"><b>Priyanshu Bhardwaj</b><br>B.Tech Computer Science &amp; Engineering · NIT Jalandhar<br><span style="color:var(--muted)">November 2026</span></div>
+  </div>
+  <div class="art r" data-s="0" style="opacity:.0">${graphSVG(BIP)}</div>`,
+  steps:[
+   {note:"Good morning everyone. Today I'll explain how recommender systems work — the engines behind Amazon, Spotify, YouTube and Netflix — using one simple tool from discrete maths: graph theory.",run:el=>{const a=el.querySelector(".art");a.style.transition="opacity .8s";a.style.opacity=".35"}},
+   {note:"We'll build the general theory step by step, and use a small Netflix dataset as our running example so every concept is concrete."}
+  ]});
+
+// 2 what is a recommender system
+S.push({name:"What is a recommender?",kicker:"Introduction",title:"Why every platform needs a recommender system",body:`
+  <div class="col" style="gap:24px">
+    <div class="row3">
+      <div class="card tint stat r" data-s="0"><div class="num">Millions</div><div class="lab">of items in modern catalogues (products, songs, videos, shows)</div></div>
+      <div class="card tint stat r" data-s="1"><div class="num">10–40</div><div class="lab">items fit on a user's screen without scrolling</div></div>
+      <div class="card tint stat r" data-s="2"><div class="num">80%</div><div class="lab">of hours streamed on Netflix come from recommendations, not search</div><div class="src">Gomez-Uribe &amp; Hunt, 2015 [1]</div></div>
+    </div>
+    <div class="callout blue r" data-s="3"><b>Definition:</b> A <b>recommender system</b> predicts which items a user will find most relevant by learning from past interactions and item attributes.</div>
+    <div class="callout r" data-s="4"><b>Core insight:</b> Instead of storing giant tables, we can model users and items as a <b>graph</b> — and recommend items that are <b>closest to the user</b> along graph paths.</div>
+  </div>`,
+  steps:[
+   {note:"Whether you open Amazon, Spotify, YouTube or Netflix, the platform has millions of items in its catalogue."},
+   {note:"Yet a phone or TV screen can only display ten to forty items at a time."},
+   {note:"This filtering problem drives most engagement. On Netflix, for instance, 80 percent of everything people watch comes from recommendations rather than the search bar."},
+   {note:"Formally, a recommender system takes past user interactions and item attributes, and predicts which unseen items a specific user will value most."},
+   {note:"Today's core idea: model users and items as a graph, and recommend items that sit closest to the user in that graph."}
+  ]});
+
+// 3 graph basics
+const BASIC={vb:"0 0 460 400",nodes:[
+  {id:"A",x:80,y:90,t:"A",k:"p"},{id:"B",x:280,y:60,t:"B",k:"p"},{id:"C",x:180,y:210,t:"C",k:"p"},
+  {id:"D",x:380,y:220,t:"D",k:"p"},{id:"E",x:280,y:340,t:"E",k:"p"}],
+  edges:[["A","B"],["A","C"],["B","C"],["C","D"],["B","D"],["D","E"]]};
+S.push({name:"Graph basics",kicker:"Background",title:"Graph theory in one minute",body:`
+  <div class="two">
+    <div>${graphSVG(BASIC)}</div>
+    <div class="col" style="gap:0">
+      <p class="lead r" data-s="0" style="margin-bottom:10px">A <b>graph G = (V, E)</b> is a set of dots and lines. Four terms are all we need:</p>
+      <div class="def r" data-s="1"><b>Vertex</b><span>A node in the graph. <i>Represents a user or an item.</i></span></div>
+      <div class="def r" data-s="2"><b>Edge</b><span>A link between two vertices. <i>Represents an interaction (bought, liked, watched).</i></span></div>
+      <div class="def r" data-s="3"><b>Degree</b><span>Number of edges touching a vertex. <i>Vertex C has degree 3.</i></span></div>
+      <div class="def r" data-s="4" style="border:0"><b>Path</b><span>A sequence of edges joining vertices. <i>A → C → D → E has length 3.</i></span></div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"Before we build a recommender, let's review four basic definitions from graph theory."},
+   {note:"A vertex is a node. In any recommender system, a vertex will represent either a user or an item.",run:el=>hl(el,["A"])},
+   {note:"An edge connects two vertices. In a recommender, an edge records an interaction: a user bought a book, liked a song, or watched a show.",run:el=>hl(el,["A-B"])},
+   {note:"The degree of a vertex is the count of edges connected to it. Vertex C connects to A, B and D, so its degree is 3.",run:el=>{hl(el,["C","A-C","B-C","C-D"],"hl2")}},
+   {note:"Finally, a path is a route that travels along edges from one vertex to another. A to C to D to E is a path of length 3."}
+  ]});
+
+// 4 bipartite
+const BIP4={...BIP,edges:BIP.edges.map(([a,b])=>[a,b,{riya:1,arjun:2,sara:3,dev:3}[a]])};
+S.push({name:"User–item bipartite graph",kicker:"Modelling",title:"Representing interactions as a bipartite graph",body:`
+  <div class="two">
+    <div>${graphSVG(BIP4)}</div>
+    <div class="col">
+      <div class="card r" data-s="0"><span class="tag">General Model</span><p>A recommender stores data as a <b>bipartite graph G = (U, I, E)</b>. Vertices split into <b>Users (U)</b> and <b>Items (I)</b>; edges only cross between U and I.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">1</div><div><b>Running Example (Netflix):</b> 4 users on the left, 5 shows on the right. Riya watched <i>Stranger Things</i> and <i>Dark</i>.</div></div>
+      <div class="steprow r" data-s="2"><div class="n">2</div><div>Arjun watched <i>Stranger Things</i>, <i>Dark</i> and <i>Black Mirror</i>. Users never link directly to other users.</div></div>
+      <div class="steprow r" data-s="3"><div class="n">3</div><div><b>Edge weights:</b> Real systems weight each edge (e.g. completing a show or rating 5★ gives a stronger edge than clicking and leaving).</div></div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"Any recommender system can be represented as a bipartite graph. The vertices split into two disjoint sets: Users U on the left, and Items I on the right. Every edge connects a user to an item."},
+   {note:"To make this concrete, let's use a small Netflix example. Riya has watched two items: Stranger Things and Dark."},
+   {note:"Arjun watched Stranger Things, Dark, and Black Mirror. Notice there are no direct edges between users or between items."},
+   {note:"Sara watched Dark, Black Mirror and Squid Game, while Dev watched The Crown. In production, edges also carry weights based on engagement strength."}
+  ]});
+
+// 5 collaborative filtering via paths
+S.push({name:"Collaborative filtering",kicker:"Method 1 · Collaborative Filtering",title:"How paths discover recommendations",body:`
+  <div class="two">
+    <div>${graphSVG(BIP)}</div>
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n acc">1</div><div><b>Length 1 (User → Item):</b> Items Riya has already interacted with.</div></div>
+      <div class="steprow r" data-s="1"><div class="n blu">2</div><div><b>Length 2 (User → Item → User):</b> Other users who liked the same items (<b>Arjun</b> and <b>Sara</b>). They are Riya's taste neighbours.</div></div>
+      <div class="steprow r" data-s="2"><div class="n acc">3</div><div><b>Length 3 (User → Item → User → Item):</b> Unseen items those neighbours liked (<b>Black Mirror</b> and <b>Squid Game</b>).</div></div>
+      <div class="callout green r" data-s="3"><b>Collaborative Filtering</b> in one sentence: a <b>path of length 3</b> from a user to an unseen item is a recommendation — and explains rows like <i>“Because you watched Dark”</i>.</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"The most famous recommendation technique is Collaborative Filtering: recommending items liked by similar users. Look at what happens when we walk the graph from Riya. One step reaches items she already knows.",run:el=>hl(el,["riya","riya-st","riya-dark","st","dark"],"hl")},
+   {note:"Two steps reach other users who interacted with those same items: Arjun and Sara. In graph terms, 2-hop neighbours are users with overlapping taste.",run:el=>hl(el,["arjun","sara","arjun-st","arjun-dark","sara-dark"],"hl2")},
+   {note:"Three steps land back on the item side, reaching unseen items that her neighbours liked: Black Mirror and Squid Game. Dev and The Crown are in a disconnected component.",run:el=>{hl(el,["arjun-bm","sara-bm","sara-sg","bm","sg"],"hl");fade(el,["dev","crown","dev-crown"])}},
+   {note:"So collaborative filtering is simply finding paths of length 3 in the bipartite graph. And because we know which item sits in the middle of the path, the system can explain itself: 'Because you watched Dark'."}
+  ]});
+
+// 6 counting paths
+S.push({name:"Scoring by counting paths",kicker:"Ranking Candidates",title:"More paths = stronger recommendation",body:`
+  <div class="two" style="grid-template-columns:560px 1fr;align-items:start">
+    <div class="col">
+      <div class="card r" data-s="0"><div class="pt-h"><b>Black Mirror</b><span class="badge">3 paths</span></div>
+        <div class="mono">Riya → Stranger Things → Arjun → Black Mirror<br>Riya → Dark → Arjun → Black Mirror<br>Riya → Dark → Sara → Black Mirror</div></div>
+      <div class="card r" data-s="1"><div class="pt-h"><b>Squid Game</b><span class="badge blue">1 path</span></div>
+        <div class="mono">Riya → Dark → Sara → Squid Game</div></div>
+      <div class="card r" data-s="2"><div class="pt-h"><b>The Crown</b><span class="badge grey">0 paths</span></div>
+        <div class="small">No path of any length connects Riya to The Crown.</div></div>
+    </div>
+    <div class="col" style="gap:18px">
+      <div class="card tint r" data-s="3"><span class="tag">Recommendation score = count of length-3 paths</span>
+        <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">3</div></div>
+        <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="33"></div></div><div class="val">1</div></div>
+        <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">0</div></div>
+      </div>
+      <div class="callout blue r" data-s="4"><b>Linear Algebra Link:</b> Let <b>B</b> be the |U| × |I| bi-adjacency matrix (1 = interacted). Entry (u, i) of <b>B·Bᵀ·B</b> equals the exact number of length-3 paths from user u to item i.</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"A recommender doesn't just find candidates; it has to rank them. Look at how many length-3 paths reach Black Mirror from Riya: three distinct paths."},
+   {note:"Squid Game is reached by only one length-3 path, via Dark and Sara."},
+   {note:"The Crown is reached by zero paths."},
+   {note:"Counting the paths gives us a clean numerical ranking: Black Mirror ranks #1 with score 3, Squid Game ranks #2 with score 1.",run:(el)=>bars(el)},
+   {note:"And this connects directly to linear algebra: if B is the user-by-item interaction matrix, then the matrix product B times B-transpose times B counts all length-3 paths for every user-item pair."}
+  ]});
+
+// 7 random walk
+S.push({name:"Random walks (PageRank)",kicker:"Scaling to Millions of Nodes",title:"Random walks: approximating paths at scale",body:`
+  <div class="two">
+    <div>${graphSVG(BIP,{token:true})}</div>
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>Start a random walker at the target user (<b>Riya</b>).</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div>At each step, cross a <b>random incident edge</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div>With probability α = 15%, <b>restart at Riya</b> so the walk stays local.</div></div>
+      <div class="card tint r" data-s="1"><span class="tag">Stationary visits per 1,000 steps (100,000 simulated)</span>
+        <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">${WALK.bm}</div></div>
+        <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="${Math.round(WALK.sg/WALK.bm*100)}"></div></div><div class="val">${WALK.sg}</div></div>
+        <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">${WALK.crown}</div></div>
+      </div>
+      <div class="callout gold r" data-s="2">This algorithm is <b>Personalized PageRank</b> [3]. It reproduces our path ranking locally in milliseconds — how systems like Pinterest's Pixie scale to billions of items [2].</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"When a platform has 200 million users, multiplying giant matrices is too slow. Instead, real recommenders simulate a Random Walk with Restart beginning at the user.",run:el=>{hl(el,["riya"]);animateToken(el)}},
+   {note:"The walker hops randomly along edges, and 15 percent of the time teleports back to Riya. By counting how often the walker lands on each unseen item, Black Mirror again wins easily over Squid Game.",run:el=>bars(el)},
+   {note:"This is Personalized PageRank — the user-specific cousin of Google's PageRank algorithm — and it lets recommenders score items in milliseconds by exploring only the local neighbourhood."}
+  ]});
+
+// 8 cold start & content-based filtering
+const COLD={vb:"0 0 560 400",labels:[[260,346,"0 interactions · isolated vertex","note r on"]],
+  nodes:[{id:"riya",x:80,y:200,t:"Riya",k:"v"},{id:"dark",x:260,y:110,t:"Dark",k:"s",w:130},
+    {id:"n1899",x:260,y:300,t:"1899 (new item)",k:"s",w:155},
+    {id:"cre",x:460,y:150,t:"Same creators",k:"a",w:170,s:1},{id:"mys",x:460,y:270,t:"Genre: Mystery",k:"a",w:170,s:1}],
+  edges:[["riya","dark"],["dark","cre",1,"dash"],["n1899","cre",1,"dash"],["dark","mys",1,"dash"],["n1899","mys",1,"dash"]]};
+S.push({name:"Cold start & content nodes",kicker:"Method 2 · Content-Based Filtering",title:"Solving the cold-start problem with attribute vertices",body:`
+  <div class="two">
+    <div>${graphSVG(COLD)}</div>
+    <div class="col">
+      <div class="card r" data-s="0"><span class="tag">The Cold-Start Problem</span><p>When a brand-new item enters the catalogue (e.g. <b>1899</b>), no user has interacted with it yet. Its degree is <b>0</b>, so collaborative paths cannot reach it.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">+</div><div><b>Content-Based Fix:</b> Add <b>attribute vertices</b> (genres, creators, brands, tags) to form a heterogeneous knowledge graph.</div></div>
+      <div class="callout green r" data-s="2">Now a path exists through shared attributes: <b>Riya → Dark → Same creators → 1899</b>. Graph theory unifies Collaborative and Content-Based filtering in one structure.</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"Pure collaborative filtering has a famous weakness called the cold-start problem. When a brand-new item is added — say the show 1899 on launch day — zero users have interacted with it, so its degree is zero."},
+   {note:"To solve this, we add Content-Based Filtering directly into our graph by creating attribute vertices: genres, creators, actors, or product categories.",run:el=>{const n=el.querySelector("text.note");n&&n.classList.remove("on")}},
+   {note:"Now 1899 connects to Dark through shared attributes, creating the length-3 path Riya to Dark to Same Creators to 1899 on day one. One graph now combines both collaborative and content-based recommendation.",run:el=>hl(el,["riya","riya-dark","dark","dark-cre","cre","n1899-cre","n1899"])}
+  ]});
+
+// 9 pipeline
+S.push({name:"End-to-end architecture",kicker:"System Architecture",title:"How a recommender system works in production",body:`
+  <div class="col" style="gap:30px;height:100%">
+    <div class="row4" style="height:175px">
+      <div class="pbox r" data-s="0"><div class="k">STAGE 1</div><h3>Collect</h3><p>Log implicit &amp; explicit signals (clicks, watch time, purchases, ratings).</p></div>
+      <div class="pbox r" data-s="1"><div class="k">STAGE 2</div><h3>Build Graph</h3><p>Represent users, items and attributes as vertices; weight edges by engagement.</p></div>
+      <div class="pbox r" data-s="2"><div class="k">STAGE 3</div><h3>Retrieve</h3><p>Run random walks / path scoring to shortlist top candidate items.</p></div>
+      <div class="pbox r" data-s="3"><div class="k">STAGE 4</div><h3>Rank &amp; Serve</h3><p>Order the shortlist by predicted relevance and render the user's feed.</p></div>
+    </div>
+    <div class="callout blue r" data-s="4"><b>Online feedback loop:</b> Every new click or watch event adds or re-weights an edge in real time, immediately shifting future random walks.</div>
+    <div class="small r" data-s="4">In modern production systems (Netflix, YouTube, Pinterest), graph walks and Graph Neural Networks generate candidate embeddings that feed a final ranking model [1, 2].</div>
+  </div>`,
+  steps:[
+   {note:"Let's step back and view the complete architecture of a recommender system. Stage 1 collects user interactions: clicks, watch duration, purchases, or ratings."},
+   {note:"Stage 2 updates the User-Item-Attribute graph, assigning higher edge weights to stronger engagement."},
+   {note:"Stage 3 runs graph traversal — path counting, Personalized PageRank, or graph embeddings — to retrieve a shortlist of a few hundred candidate items out of millions."},
+   {note:"Stage 4 ranks those candidates and serves the top items onto the user's screen."},
+   {note:"And the system is a closed feedback loop: every new interaction adds an edge, immediately updating the paths for the next visit."}
+  ]});
+
+// 10 limitations
+S.push({name:"Challenges & trade-offs",kicker:"Critical Evaluation",title:"Limitations of graph-based recommenders",body:`
+  <div class="row3" style="height:100%;align-content:start">
+    <div class="card r" data-s="0"><span class="tag">Popularity bias</span><h3>High-degree hubs dominate</h3><p>Blockbuster items have massive degree, pulling in most random walks like gravity.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Normalize edge weights by vertex degree.</p></div>
+    <div class="card r" data-s="1"><span class="tag">Filter bubbles</span><h3>Echo chambers of taste</h3><p>Short paths trap users inside a narrow cluster of very similar items.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Inject controlled exploration / diversity slots.</p></div>
+    <div class="card r" data-s="2"><span class="tag">Sparsity &amp; privacy</span><h3>New users &amp; sensitive edges</h3><p>New users have few edges, while interaction histories can leak private habits.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Onboarding prompts and differential privacy.</p></div>
+  </div>`,
+  steps:[
+   {note:"To finish critically, where do graph recommenders struggle? First is popularity bias: high-degree items act like hubs that attract most walks. We fix this by dividing scores by vertex degree."},
+   {note:"Second is the filter bubble: always recommending 3-hop neighbours locks users into a narrow cluster. Production systems intentionally inject exploration slots to break out of the local cluster."},
+   {note:"Third is user cold-start and privacy: new users have almost no edges, and interaction graphs must be anonymised carefully because edge patterns can reveal personal identity."}
+  ]});
+
+// 11 summary
+S.push({name:"Summary",kicker:"Conclusion",title:"Key takeaways",body:`
+  <div class="two" style="grid-template-columns:1fr 380px;align-items:start">
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>A recommender system models users and items as a <b>bipartite graph G = (U, I, E)</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div><b>Collaborative filtering</b> is finding <b>length-3 paths</b> (User → Item → Peer → Item).</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div><b>Random walks (Personalized PageRank)</b> approximate path counts at million-node scale.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">4</div><div>Adding <b>attribute vertices</b> fuses content-based filtering into the graph to solve cold start.</div></div>
+      <div class="small r" data-s="1" style="margin-top:14px;font-size:13.5px;line-height:1.6">
+        [1] C. A. Gomez-Uribe, N. Hunt. <i>The Netflix Recommender System: Algorithms, Business Value, and Innovation.</i> ACM TMIS, 2015.<br>
+        [2] C. Eksombatchai et al. <i>Pixie: A System for Recommending 3+ Billion Items to 200+ Million Users in Real-Time.</i> WWW, 2018.<br>
+        [3] L. Page, S. Brin, R. Motwani, T. Winograd. <i>The PageRank Citation Ranking: Bringing Order to the Web.</i> Stanford, 1999.</div>
+    </div>
+    <div class="card tint r" data-s="1" style="text-align:center;padding:48px 24px">
+      <div style="font:600 40px var(--serif);color:var(--navy)">Thank you</div>
+      <div style="font-size:21px;color:var(--muted);margin-top:10px">Questions?</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"To wrap up: first, any recommender system can be understood as a user-item bipartite graph. Second, collaborative filtering is simply following length-3 paths. Third, random walks let us compute those scores at massive scale. And fourth, adding attribute vertices unifies content-based filtering to solve cold start."},
+   {note:"Thank you everyone. I'd be glad to take any questions."}
+  ]});
+
+// ============================================================ player
+const $=id=>document.getElementById(id);
+const stage=$("stage");
+const FLAT=[];S.forEach((s,si)=>s.steps.forEach((_,k)=>FLAT.push([si,k])));
+const start=S.map((_,si)=>FLAT.findIndex(f=>f[0]===si));
+let pos=-1,rendered=-1,el=null;
+
+function render(si){GEN++;const s=S[si];
+  stage.innerHTML=`<div class="slide${s.cover?" cover":""}">${s.cover?"":`<div class="head"><div class="kicker">${s.kicker}</div><h2 class="title">${s.title}</h2><div class="rule"></div></div>`}
+    <div class="body">${s.body}</div><div class="sfoot"><span>How Recommender Systems Work · A Graph Theory View</span><span>${si+1} / ${S.length}</span></div></div>`;
+  el=stage.firstElementChild;rendered=si}
+function reveal(k){el.querySelectorAll("[data-s]").forEach(x=>x.classList.toggle("on",+x.dataset.s<=k))}
+function go(p,still){
+  p=Math.max(0,Math.min(FLAT.length-1,p));const [si,k]=FLAT[p];
+  if(!(si===rendered&&p===pos+1)){
+    stage.classList.add("instant");render(si);reveal(k-1);
+    for(let j=0;j<k;j++){const f=S[si].steps[j].run;f&&f(el,true)}
+    void stage.offsetWidth;if(!still)stage.classList.remove("instant");
+  }
+  reveal(k);const f=S[si].steps[k].run;f&&f(el,!!still);pos=p;
+  $("count").textContent=`${si+1} / ${S.length}`;
+  $("notes").innerHTML=`<small>Speaker notes · ${si+1}.${k+1}</small>${S[si].steps[k].note}`;
+  segs.forEach((g,j)=>g.firstChild.style.width=j<si?"100%":j>si?"0%":((k+1)/S[si].steps.length*100)+"%");
+  [...$("menu").children].forEach((b,j)=>b.classList.toggle("cur",j===si));
+}
+const segs=S.map((s,si)=>{const g=document.createElement("div");g.className="seg";g.innerHTML="<i></i>";g.style.setProperty("--n",s.steps.length);
+  g.title=`${si+1}. ${s.name}`;g.onclick=e=>{e.stopPropagation();go(start[si])};$("prog").appendChild(g);return g});
+S.forEach((s,si)=>{const b=document.createElement("button");b.innerHTML=`<span>${String(si+1).padStart(2,"0")}</span>${s.name}`;
+  b.onclick=()=>{go(start[si]);$("menu").hidden=true};$("menu").appendChild(b)});
+
+const next=()=>go(pos+1),prev=()=>go(pos-1);
+function toggleFull(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.()}
+document.addEventListener("fullscreenchange",()=>{document.body.classList.toggle("fs",!!document.fullscreenElement);$("bFull").classList.toggle("on",!!document.fullscreenElement);fit()});
+$("bPrev").onclick=prev;$("bNext").onclick=next;$("bFull").onclick=toggleFull;
+$("bMenu").onclick=()=>{$("menu").hidden=!$("menu").hidden;$("help").hidden=true};
+$("bHelp").onclick=()=>{$("help").hidden=!$("help").hidden;$("menu").hidden=true};
+$("bNotes").onclick=()=>{$("notes").hidden=!$("notes").hidden;$("bNotes").classList.toggle("on",!$("notes").hidden)};
+$("viewport").onclick=()=>{if(!$("menu").hidden||!$("help").hidden){$("menu").hidden=$("help").hidden=true;return}next()};
+document.addEventListener("keydown",e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
+  if([" ","ArrowRight","ArrowDown","PageDown","Enter"].includes(k)){e.preventDefault();next()}
+  else if(["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(k)){e.preventDefault();prev()}
+  else if(k==="Home")go(0);else if(k==="End")go(FLAT.length-1);
+  else if(k==="f"||k==="F")toggleFull();
+  else if(k==="n"||k==="N")$("bNotes").click();
+  else if(k==="m"||k==="M")$("bMenu").click();
+  else if(k==="?")$("bHelp").click();
+  else if(k==="Escape"){$("menu").hidden=$("help").hidden=true}});
+let tx=null;$("viewport").addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
+$("viewport").addEventListener("touchend",e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>40){e.preventDefault();dx<0?next():prev()}});
+
+function fit(){const v=$("viewport"),pad=document.body.classList.contains("fs")?0:24;
+  const s=Math.min((v.clientWidth-pad)/1280,(v.clientHeight-pad)/720);stage.style.transform=`translate(-50%,-50%) scale(${Math.max(.1,s)})`}
+addEventListener("resize",fit);
+
+// ?bare = slide only (for screenshots) ; #slide.step deep link ; ?check = layout self-test
+if(location.search.includes("bare"))document.body.classList.add("fs");
+fit();
+const m=location.hash.match(/^#(\d+)(?:\.(\d+))?/);
+if(m){const si=Math.min(S.length,+m[1])-1,k=Math.min(S[si].steps.length,+(m[2]||S[si].steps.length))-1;go(start[si]+k,location.search.includes("still"))}else go(0);
+
+if(location.search.includes("check")){
+  const out=[];
+  S.forEach((s,si)=>{go(start[si]+s.steps.length-1,true);const b=el.querySelector(".body");
+    if(b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1)out.push(`slide ${si+1}: body overflow ${b.scrollWidth}x${b.scrollHeight} > ${b.clientWidth}x${b.clientHeight}`);
+    const br=b.getBoundingClientRect();
+    const items=[...el.querySelectorAll(".card,.callout,.steprow,.def,.lead,.pbox,.small,.brow,.stat,.who,h1,.sub")].filter(x=>x.offsetParent);
+    items.forEach(x=>{const r=x.getBoundingClientRect();if(r.bottom>br.bottom+1||r.right>br.right+1)out.push(`slide ${si+1}: clipped ${x.className}`)});
+    for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],c=items[j];if(a.contains(c)||c.contains(a))continue;
+      const A=a.getBoundingClientRect(),C=c.getBoundingClientRect();const ox=Math.min(A.right,C.right)-Math.max(A.left,C.left),oy=Math.min(A.bottom,C.bottom)-Math.max(A.top,C.top);
+      if(ox>2&&oy>2)out.push(`slide ${si+1}: overlap "${a.className}" / "${c.className}"`)}});
+  const pre=document.createElement("pre");pre.id="check";pre.textContent=out.length?out.join("\n"):"LAYOUT OK";document.body.appendChild(pre);
+}
+</script>
+</body>
+</html>
