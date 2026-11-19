@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>How Netflix Recommends: A Graph Theory View</title>
+<title>How Recommender Systems Work: A Graph Theory View</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
@@ -96,8 +96,8 @@ svg .r{transform:none}
 .def span{font-size:18px;line-height:1.45}
 .def i{font-style:normal;color:var(--muted)}
 .stat{text-align:left}
-.stat .num{font:700 50px/1 var(--serif);color:var(--navy)}
-.stat .lab{font-size:18px;line-height:1.4;margin-top:10px}
+.stat .num{font:700 44px/1.05 var(--serif);color:var(--navy)}
+.stat .lab{font-size:17.5px;line-height:1.4;margin-top:10px}
 .stat .src{font-size:13px;color:var(--dim);margin-top:6px}
 .steprow{display:grid;grid-template-columns:36px 1fr;gap:14px;align-items:start}
 .steprow .n{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font:700 16px var(--sans);display:flex;align-items:center;justify-content:center}
@@ -153,8 +153,8 @@ svg.g #tok{fill:var(--gold);stroke:#fff;stroke-width:3}
 .cover{padding:0}
 .cover .wrap{position:absolute;left:96px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center}
 .cover .ck{font:700 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
-.cover h1{font:600 56px/1.1 var(--serif);color:var(--navy);margin:18px 0 0;letter-spacing:-.015em}
-.cover .sub{font-size:23px;line-height:1.45;color:var(--muted);margin:20px 0 0}
+.cover h1{font:600 54px/1.1 var(--serif);color:var(--navy);margin:18px 0 0;letter-spacing:-.015em}
+.cover .sub{font-size:22px;line-height:1.45;color:var(--muted);margin:20px 0 0}
 .cover .who{margin-top:44px;padding-top:20px;border-top:2px solid var(--line);font-size:18px;line-height:1.6}
 .cover .who b{font:600 21px var(--serif);color:var(--navy)}
 .cover .art{position:absolute;right:56px;top:110px;width:440px}
@@ -187,7 +187,7 @@ svg.g #tok{fill:var(--gold);stroke:#fff;stroke-width:3}
 
 <script>
 // ============================================================ graph data
-const BIP={vb:"0 0 560 400",labels:[[100,24,"VIEWERS"],[420,24,"SHOWS"]],
+const BIP={vb:"0 0 560 400",labels:[[100,24,"USERS (U)"],[420,24,"ITEMS (I)"]],
   nodes:[
     {id:"riya",x:100,y:78,t:"Riya",k:"v"},{id:"arjun",x:100,y:168,t:"Arjun",k:"v"},
     {id:"sara",x:100,y:258,t:"Sara",k:"v"},{id:"dev",x:100,y:348,t:"Dev",k:"v"},
@@ -241,34 +241,34 @@ const S=[];
 // 1 cover
 S.push({cover:true,name:"Title",body:`
   <div class="wrap">
-    <div class="ck r" data-s="0">Graph Theory · Case Study</div>
-    <h1 class="r" data-s="0">How Netflix Decides<br>What You Watch Next</h1>
-    <p class="sub r" data-s="0">Understanding recommender systems through vertices, edges, paths and random walks.</p>
+    <div class="ck r" data-s="0">Graph Theory · Computer Science Seminar</div>
+    <h1 class="r" data-s="0">How Recommender<br>Systems Work</h1>
+    <p class="sub r" data-s="0">Explaining personalized recommendations with vertices, edges, paths and random walks — using Netflix as a running example.</p>
     <div class="who r" data-s="1"><b>Priyanshu Bhardwaj</b><br>B.Tech Computer Science &amp; Engineering · NIT Jalandhar<br><span style="color:var(--muted)">November 2026</span></div>
   </div>
   <div class="art r" data-s="0" style="opacity:.0">${graphSVG(BIP)}</div>`,
   steps:[
-   {note:"Good morning everyone. Today I'll explain how Netflix chooses the shows on your home screen, using one simple idea from graph theory.",run:el=>{const a=el.querySelector(".art");a.style.transition="opacity .8s";a.style.opacity=".35"}},
-   {note:"No heavy machine learning is needed to follow this. If you know what a graph and a path are, you'll understand the whole talk."}
+   {note:"Good morning everyone. Today I'll explain how recommender systems work — the engines behind Amazon, Spotify, YouTube and Netflix — using one simple tool from discrete maths: graph theory.",run:el=>{const a=el.querySelector(".art");a.style.transition="opacity .8s";a.style.opacity=".35"}},
+   {note:"We'll build the general theory step by step, and use a small Netflix dataset as our running example so every concept is concrete."}
   ]});
 
-// 2 problem
-S.push({name:"The problem",kicker:"Motivation",title:"Too many shows, too little screen",body:`
-  <div class="col" style="gap:26px">
+// 2 what is a recommender system
+S.push({name:"What is a recommender?",kicker:"Introduction",title:"Why every platform needs a recommender system",body:`
+  <div class="col" style="gap:24px">
     <div class="row3">
-      <div class="card tint stat r" data-s="0"><div class="num">1000s</div><div class="lab">of titles in the Netflix catalogue</div></div>
-      <div class="card tint stat r" data-s="1"><div class="num">~40</div><div class="lab">titles fit on one home screen</div></div>
-      <div class="card tint stat r" data-s="2"><div class="num">80%</div><div class="lab">of hours watched come from recommendations</div><div class="src">Gomez-Uribe &amp; Hunt, 2015 [1]</div></div>
+      <div class="card tint stat r" data-s="0"><div class="num">Millions</div><div class="lab">of items in modern catalogues (products, songs, videos, shows)</div></div>
+      <div class="card tint stat r" data-s="1"><div class="num">10–40</div><div class="lab">items fit on a user's screen without scrolling</div></div>
+      <div class="card tint stat r" data-s="2"><div class="num">80%</div><div class="lab">of hours streamed on Netflix come from recommendations, not search</div><div class="src">Gomez-Uribe &amp; Hunt, 2015 [1]</div></div>
     </div>
-    <div class="callout blue r" data-s="3"><b>The question:</b> out of thousands of titles, which ~40 should <i>this</i> person see tonight?</div>
-    <div class="callout r" data-s="4"><b>Our answer:</b> draw viewers and shows as a <b>graph</b>, then recommend the shows that are <b>closest to you</b> in that graph.</div>
+    <div class="callout blue r" data-s="3"><b>Definition:</b> A <b>recommender system</b> predicts which items a user will find most relevant by learning from past interactions and item attributes.</div>
+    <div class="callout r" data-s="4"><b>Core insight:</b> Instead of storing giant tables, we can model users and items as a <b>graph</b> — and recommend items that are <b>closest to the user</b> along graph paths.</div>
   </div>`,
   steps:[
-   {note:"Netflix has thousands of titles."},
-   {note:"But your TV screen only shows about forty of them at once."},
-   {note:"And this choice matters: Netflix reported that about 80 percent of the hours people watch come from recommendations, not from search."},
-   {note:"So the real question is: which forty titles should this specific person see?"},
-   {note:"Our answer for today: treat it as a graph problem. Recommend what is close to you in the graph."}
+   {note:"Whether you open Amazon, Spotify, YouTube or Netflix, the platform has millions of items in its catalogue."},
+   {note:"Yet a phone or TV screen can only display ten to forty items at a time."},
+   {note:"This filtering problem drives most engagement. On Netflix, for instance, 80 percent of everything people watch comes from recommendations rather than the search bar."},
+   {note:"Formally, a recommender system takes past user interactions and item attributes, and predicts which unseen items a specific user will value most."},
+   {note:"Today's core idea: model users and items as a graph, and recommend items that sit closest to the user in that graph."}
   ]});
 
 // 3 graph basics
@@ -280,60 +280,60 @@ S.push({name:"Graph basics",kicker:"Background",title:"Graph theory in one minut
   <div class="two">
     <div>${graphSVG(BASIC)}</div>
     <div class="col" style="gap:0">
-      <p class="lead r" data-s="0" style="margin-bottom:10px">A <b>graph</b> is just dots and lines. Four words are all we need:</p>
-      <div class="def r" data-s="1"><b>Vertex</b><span>A dot. <i>For us: a viewer or a show.</i></span></div>
-      <div class="def r" data-s="2"><b>Edge</b><span>A line joining two vertices. <i>“Riya watched Dark.”</i></span></div>
-      <div class="def r" data-s="3"><b>Degree</b><span>How many edges touch a vertex. <i>C has degree 3.</i></span></div>
-      <div class="def r" data-s="4" style="border:0"><b>Path</b><span>A route along edges. <i>A → C → D → E has length 3.</i></span></div>
+      <p class="lead r" data-s="0" style="margin-bottom:10px">A <b>graph G = (V, E)</b> is a set of dots and lines. Four terms are all we need:</p>
+      <div class="def r" data-s="1"><b>Vertex</b><span>A node in the graph. <i>Represents a user or an item.</i></span></div>
+      <div class="def r" data-s="2"><b>Edge</b><span>A link between two vertices. <i>Represents an interaction (bought, liked, watched).</i></span></div>
+      <div class="def r" data-s="3"><b>Degree</b><span>Number of edges touching a vertex. <i>Vertex C has degree 3.</i></span></div>
+      <div class="def r" data-s="4" style="border:0"><b>Path</b><span>A sequence of edges joining vertices. <i>A → C → D → E has length 3.</i></span></div>
     </div>
   </div>`,
   steps:[
-   {note:"Quick refresher. A graph is a set of dots and the lines between them."},
-   {note:"Each dot is a vertex. In our story a vertex is either a person or a show.",run:el=>hl(el,["A"])},
-   {note:"An edge connects two vertices. Here, an edge will mean 'this person watched this show'.",run:el=>hl(el,["A-B"])},
-   {note:"The degree of a vertex is the number of edges touching it. C touches A, B and D, so its degree is 3.",run:el=>{hl(el,["C","A-C","B-C","C-D"],"hl2")}},
-   {note:"A path is a route that follows edges. A to C to D to E is a path of length three. Paths are the heart of this talk.",run:el=>{el.querySelectorAll(".hl,.hl2").forEach(x=>x.classList.remove("hl","hl2"));hl(el,["A","C","D","E","A-C","C-D","D-E"])}}
+   {note:"Before we build a recommender, let's review four basic definitions from graph theory."},
+   {note:"A vertex is a node. In any recommender system, a vertex will represent either a user or an item.",run:el=>hl(el,["A"])},
+   {note:"An edge connects two vertices. In a recommender, an edge records an interaction: a user bought a book, liked a song, or watched a show.",run:el=>hl(el,["A-B"])},
+   {note:"The degree of a vertex is the count of edges connected to it. Vertex C connects to A, B and D, so its degree is 3.",run:el=>{hl(el,["C","A-C","B-C","C-D"],"hl2")}},
+   {note:"Finally, a path is a route that travels along edges from one vertex to another. A to C to D to E is a path of length 3."}
   ]});
 
 // 4 bipartite
 const BIP4={...BIP,edges:BIP.edges.map(([a,b])=>[a,b,{riya:1,arjun:2,sara:3,dev:3}[a]])};
-S.push({name:"Netflix as a graph",kicker:"Modelling",title:"Netflix as a bipartite graph",body:`
+S.push({name:"User–item bipartite graph",kicker:"Modelling",title:"Representing interactions as a bipartite graph",body:`
   <div class="two">
     <div>${graphSVG(BIP4)}</div>
     <div class="col">
-      <div class="card r" data-s="0"><span class="tag">Definition</span><p>A <b>bipartite graph</b> has two groups of vertices. Edges only go <b>between</b> the groups, never inside one.</p></div>
-      <div class="steprow r" data-s="1"><div class="n">1</div><div><b>Viewers</b> (circles) and <b>shows</b> (boxes) are the two groups.</div></div>
-      <div class="steprow r" data-s="2"><div class="n">2</div><div>An edge means <b>“watched and enjoyed”</b>. A viewer is never joined to another viewer.</div></div>
-      <div class="steprow r" data-s="3"><div class="n">3</div><div>Real systems also give edges a <b>weight</b>: finishing a series counts more than quitting after 5 minutes.</div></div>
+      <div class="card r" data-s="0"><span class="tag">General Model</span><p>A recommender stores data as a <b>bipartite graph G = (U, I, E)</b>. Vertices split into <b>Users (U)</b> and <b>Items (I)</b>; edges only cross between U and I.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">1</div><div><b>Running Example (Netflix):</b> 4 users on the left, 5 shows on the right. Riya watched <i>Stranger Things</i> and <i>Dark</i>.</div></div>
+      <div class="steprow r" data-s="2"><div class="n">2</div><div>Arjun watched <i>Stranger Things</i>, <i>Dark</i> and <i>Black Mirror</i>. Users never link directly to other users.</div></div>
+      <div class="steprow r" data-s="3"><div class="n">3</div><div><b>Edge weights:</b> Real systems weight each edge (e.g. completing a show or rating 5★ gives a stronger edge than clicking and leaving).</div></div>
     </div>
   </div>`,
   steps:[
-   {note:"Now we build the Netflix graph. It's a special kind called a bipartite graph: two groups, and edges only cross between them."},
-   {note:"Group one is viewers, group two is shows. Riya watched Stranger Things and Dark."},
-   {note:"Arjun watched Stranger Things, Dark and Black Mirror. Notice there's no line between Riya and Arjun directly."},
-   {note:"Sara watched Dark, Black Mirror and Squid Game, and Dev only watched The Crown. In real systems each edge also has a weight, so a finished series counts more than a show you abandoned."}
+   {note:"Any recommender system can be represented as a bipartite graph. The vertices split into two disjoint sets: Users U on the left, and Items I on the right. Every edge connects a user to an item."},
+   {note:"To make this concrete, let's use a small Netflix example. Riya has watched two items: Stranger Things and Dark."},
+   {note:"Arjun watched Stranger Things, Dark, and Black Mirror. Notice there are no direct edges between users or between items."},
+   {note:"Sara watched Dark, Black Mirror and Squid Game, while Dev watched The Crown. In production, edges also carry weights based on engagement strength."}
   ]});
 
-// 5 neighbours / 2-hop
-S.push({name:"Because you watched…",kicker:"Key idea",title:"Following paths: “Because you watched Dark”",body:`
+// 5 collaborative filtering via paths
+S.push({name:"Collaborative filtering",kicker:"Method 1 · Collaborative Filtering",title:"How paths discover recommendations",body:`
   <div class="two">
     <div>${graphSVG(BIP)}</div>
     <div class="col">
-      <div class="steprow r" data-s="0"><div class="n acc">1</div><div><b>1 step</b> from Riya: the shows she has already watched.</div></div>
-      <div class="steprow r" data-s="1"><div class="n blu">2</div><div><b>2 steps</b>: other viewers who watched the same show: <b>Arjun</b> and <b>Sara</b>. They share her taste.</div></div>
-      <div class="steprow r" data-s="2"><div class="n acc">3</div><div><b>3 steps</b>: shows <i>they</i> watched that Riya hasn't: <b>Black Mirror</b> and <b>Squid Game</b>.</div></div>
-      <div class="callout green r" data-s="3">A path of length 3 from a viewer to a new show is one <b>reason</b> to recommend it. This is exactly the row <b>“Because you watched Dark”</b>.</div>
+      <div class="steprow r" data-s="0"><div class="n acc">1</div><div><b>Length 1 (User → Item):</b> Items Riya has already interacted with.</div></div>
+      <div class="steprow r" data-s="1"><div class="n blu">2</div><div><b>Length 2 (User → Item → User):</b> Other users who liked the same items (<b>Arjun</b> and <b>Sara</b>). They are Riya's taste neighbours.</div></div>
+      <div class="steprow r" data-s="2"><div class="n acc">3</div><div><b>Length 3 (User → Item → User → Item):</b> Unseen items those neighbours liked (<b>Black Mirror</b> and <b>Squid Game</b>).</div></div>
+      <div class="callout green r" data-s="3"><b>Collaborative Filtering</b> in one sentence: a <b>path of length 3</b> from a user to an unseen item is a recommendation — and explains rows like <i>“Because you watched Dark”</i>.</div>
     </div>
   </div>`,
   steps:[
-   {note:"Let's find recommendations for Riya. One step away are the shows she has already seen.",run:el=>hl(el,["riya","riya-st","riya-dark","st","dark"],"hl")},
-   {note:"Two steps away are other people who watched the same shows: Arjun and Sara. They have similar taste.",run:el=>hl(el,["arjun","sara","arjun-st","arjun-dark","sara-dark"],"hl2")},
-   {note:"Three steps away are the shows those people liked that Riya hasn't seen yet: Black Mirror and Squid Game. Dev and The Crown are not connected to Riya at all.",run:el=>{hl(el,["arjun-bm","sara-bm","sara-sg","bm","sg"],"hl");fade(el,["dev","crown","dev-crown"])}},
-   {note:"So a path of length three is a reason to recommend. And it explains itself, which is why Netflix can label a row 'Because you watched Dark'."}
+   {note:"The most famous recommendation technique is Collaborative Filtering: recommending items liked by similar users. Look at what happens when we walk the graph from Riya. One step reaches items she already knows.",run:el=>hl(el,["riya","riya-st","riya-dark","st","dark"],"hl")},
+   {note:"Two steps reach other users who interacted with those same items: Arjun and Sara. In graph terms, 2-hop neighbours are users with overlapping taste.",run:el=>hl(el,["arjun","sara","arjun-st","arjun-dark","sara-dark"],"hl2")},
+   {note:"Three steps land back on the item side, reaching unseen items that her neighbours liked: Black Mirror and Squid Game. Dev and The Crown are in a disconnected component.",run:el=>{hl(el,["arjun-bm","sara-bm","sara-sg","bm","sg"],"hl");fade(el,["dev","crown","dev-crown"])}},
+   {note:"So collaborative filtering is simply finding paths of length 3 in the bipartite graph. And because we know which item sits in the middle of the path, the system can explain itself: 'Because you watched Dark'."}
   ]});
 
 // 6 counting paths
-S.push({name:"Counting paths",kicker:"Scoring",title:"More paths = stronger recommendation",body:`
+S.push({name:"Scoring by counting paths",kicker:"Ranking Candidates",title:"More paths = stronger recommendation",body:`
   <div class="two" style="grid-template-columns:560px 1fr;align-items:start">
     <div class="col">
       <div class="card r" data-s="0"><div class="pt-h"><b>Black Mirror</b><span class="badge">3 paths</span></div>
@@ -341,113 +341,113 @@ S.push({name:"Counting paths",kicker:"Scoring",title:"More paths = stronger reco
       <div class="card r" data-s="1"><div class="pt-h"><b>Squid Game</b><span class="badge blue">1 path</span></div>
         <div class="mono">Riya → Dark → Sara → Squid Game</div></div>
       <div class="card r" data-s="2"><div class="pt-h"><b>The Crown</b><span class="badge grey">0 paths</span></div>
-        <div class="small">Dev's part of the graph never connects to Riya's.</div></div>
+        <div class="small">No path of any length connects Riya to The Crown.</div></div>
     </div>
     <div class="col" style="gap:18px">
-      <div class="card tint r" data-s="3"><span class="tag">Score for Riya = number of length-3 paths</span>
+      <div class="card tint r" data-s="3"><span class="tag">Recommendation score = count of length-3 paths</span>
         <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">3</div></div>
         <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="33"></div></div><div class="val">1</div></div>
         <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">0</div></div>
       </div>
-      <div class="callout blue r" data-s="4"><b>Matrix view.</b> Let <b>B</b> be the viewer × show table (1 = watched). Riya's row of <b>B·Bᵀ·B</b> counts exactly these paths.</div>
+      <div class="callout blue r" data-s="4"><b>Linear Algebra Link:</b> Let <b>B</b> be the |U| × |I| bi-adjacency matrix (1 = interacted). Entry (u, i) of <b>B·Bᵀ·B</b> equals the exact number of length-3 paths from user u to item i.</div>
     </div>
   </div>`,
   steps:[
-   {note:"Now we turn paths into a score. Black Mirror can be reached from Riya by three different paths."},
-   {note:"Squid Game can be reached by only one path, through Sara."},
-   {note:"The Crown has zero paths, so it gets no score at all."},
-   {note:"So the ranking is simply: count the paths. Black Mirror first, Squid Game second.",run:(el)=>bars(el)},
-   {note:"For the maths students: if B is the table of who watched what, then multiplying B by B-transpose by B counts these paths for every viewer at once."}
+   {note:"A recommender doesn't just find candidates; it has to rank them. Look at how many length-3 paths reach Black Mirror from Riya: three distinct paths."},
+   {note:"Squid Game is reached by only one length-3 path, via Dark and Sara."},
+   {note:"The Crown is reached by zero paths."},
+   {note:"Counting the paths gives us a clean numerical ranking: Black Mirror ranks #1 with score 3, Squid Game ranks #2 with score 1.",run:(el)=>bars(el)},
+   {note:"And this connects directly to linear algebra: if B is the user-by-item interaction matrix, then the matrix product B times B-transpose times B counts all length-3 paths for every user-item pair."}
   ]});
 
 // 7 random walk
-S.push({name:"Random walks",kicker:"Scaling up",title:"Random walks: let a visitor explore the graph",body:`
+S.push({name:"Random walks (PageRank)",kicker:"Scaling to Millions of Nodes",title:"Random walks: approximating paths at scale",body:`
   <div class="two">
     <div>${graphSVG(BIP,{token:true})}</div>
     <div class="col">
-      <div class="steprow r" data-s="0"><div class="n">1</div><div>Start a “visitor” at <b>Riya</b>.</div></div>
-      <div class="steprow r" data-s="0"><div class="n">2</div><div>Each step, follow a <b>random edge</b>.</div></div>
-      <div class="steprow r" data-s="0"><div class="n">3</div><div>With 15% chance, <b>jump back to Riya</b> so we stay near her taste.</div></div>
-      <div class="card tint r" data-s="1"><span class="tag">Visits per 1,000 steps (100,000 simulated)</span>
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>Start a random walker at the target user (<b>Riya</b>).</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div>At each step, cross a <b>random incident edge</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div>With probability α = 15%, <b>restart at Riya</b> so the walk stays local.</div></div>
+      <div class="card tint r" data-s="1"><span class="tag">Stationary visits per 1,000 steps (100,000 simulated)</span>
         <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">${WALK.bm}</div></div>
         <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="${Math.round(WALK.sg/WALK.bm*100)}"></div></div><div class="val">${WALK.sg}</div></div>
         <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">${WALK.crown}</div></div>
       </div>
-      <div class="callout gold r" data-s="2">Same ranking as counting paths, without multiplying huge matrices. This is <b>Personalized PageRank</b> [3]; Pinterest runs it on billions of items [2].</div>
+      <div class="callout gold r" data-s="2">This algorithm is <b>Personalized PageRank</b> [3]. It reproduces our path ranking locally in milliseconds — how systems like Pinterest's Pixie scale to billions of items [2].</div>
     </div>
   </div>`,
   steps:[
-   {note:"Counting every path gets expensive with millions of users. So instead, we send a visitor walking randomly through the graph, starting at Riya.",run:el=>{hl(el,["riya"]);animateToken(el)}},
-   {note:"Every step it follows a random edge, and sometimes jumps back to Riya. If we count where it lands, Black Mirror is visited most, Squid Game less, and The Crown never.",run:el=>bars(el)},
-   {note:"Same answer as counting paths, but much cheaper. This idea is Personalized PageRank, a version of Google's original PageRank, and Pinterest uses it to recommend from billions of items."}
+   {note:"When a platform has 200 million users, multiplying giant matrices is too slow. Instead, real recommenders simulate a Random Walk with Restart beginning at the user.",run:el=>{hl(el,["riya"]);animateToken(el)}},
+   {note:"The walker hops randomly along edges, and 15 percent of the time teleports back to Riya. By counting how often the walker lands on each unseen item, Black Mirror again wins easily over Squid Game.",run:el=>bars(el)},
+   {note:"This is Personalized PageRank — the user-specific cousin of Google's PageRank algorithm — and it lets recommenders score items in milliseconds by exploring only the local neighbourhood."}
   ]});
 
-// 8 cold start
-const COLD={vb:"0 0 560 400",labels:[[260,346,"0 viewers · no edges","note r on"]],
+// 8 cold start & content-based filtering
+const COLD={vb:"0 0 560 400",labels:[[260,346,"0 interactions · isolated vertex","note r on"]],
   nodes:[{id:"riya",x:80,y:200,t:"Riya",k:"v"},{id:"dark",x:260,y:110,t:"Dark",k:"s",w:130},
-    {id:"n1899",x:260,y:300,t:"1899 (new)",k:"s",w:150},
+    {id:"n1899",x:260,y:300,t:"1899 (new item)",k:"s",w:155},
     {id:"cre",x:460,y:150,t:"Same creators",k:"a",w:170,s:1},{id:"mys",x:460,y:270,t:"Genre: Mystery",k:"a",w:170,s:1}],
   edges:[["riya","dark"],["dark","cre",1,"dash"],["n1899","cre",1,"dash"],["dark","mys",1,"dash"],["n1899","mys",1,"dash"]]};
-S.push({name:"Cold start",kicker:"A hard case",title:"A brand-new show has no viewers",body:`
+S.push({name:"Cold start & content nodes",kicker:"Method 2 · Content-Based Filtering",title:"Solving the cold-start problem with attribute vertices",body:`
   <div class="two">
     <div>${graphSVG(COLD)}</div>
     <div class="col">
-      <div class="card r" data-s="0"><span class="tag">The cold-start problem</span><p><b>1899</b> launches tonight. Nobody has watched it, so it has <b>no edges</b>. No path reaches it, so it is never recommended.</p></div>
-      <div class="steprow r" data-s="1"><div class="n">+</div><div>Fix: add new kinds of vertices: <b>creators, genres, actors</b>. Shows connect through what they have in common.</div></div>
-      <div class="callout green r" data-s="2">Dark and 1899 share the same creators, so the path <b>Riya → Dark → creators → 1899</b> exists on day one.</div>
+      <div class="card r" data-s="0"><span class="tag">The Cold-Start Problem</span><p>When a brand-new item enters the catalogue (e.g. <b>1899</b>), no user has interacted with it yet. Its degree is <b>0</b>, so collaborative paths cannot reach it.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">+</div><div><b>Content-Based Fix:</b> Add <b>attribute vertices</b> (genres, creators, brands, tags) to form a heterogeneous knowledge graph.</div></div>
+      <div class="callout green r" data-s="2">Now a path exists through shared attributes: <b>Riya → Dark → Same creators → 1899</b>. Graph theory unifies Collaborative and Content-Based filtering in one structure.</div>
     </div>
   </div>`,
   steps:[
-   {note:"Here's a hard case. 1899 is a brand-new show. With zero viewers it has zero edges, so no path can reach it."},
-   {note:"The fix is to add other kinds of vertices: who made the show, its genre, its actors. Now shows connect to each other through what they share.",run:el=>{const n=el.querySelector("text.note");n&&n.classList.remove("on")}},
-   {note:"Dark and 1899 were made by the same creators. So there's a path from Riya to 1899 even before anyone has watched it.",run:el=>hl(el,["riya","riya-dark","dark","dark-cre","cre","n1899-cre","n1899"])}
+   {note:"Pure collaborative filtering has a famous weakness called the cold-start problem. When a brand-new item is added — say the show 1899 on launch day — zero users have interacted with it, so its degree is zero."},
+   {note:"To solve this, we add Content-Based Filtering directly into our graph by creating attribute vertices: genres, creators, actors, or product categories.",run:el=>{const n=el.querySelector("text.note");n&&n.classList.remove("on")}},
+   {note:"Now 1899 connects to Dark through shared attributes, creating the length-3 path Riya to Dark to Same Creators to 1899 on day one. One graph now combines both collaborative and content-based recommendation.",run:el=>hl(el,["riya","riya-dark","dark","dark-cre","cre","n1899-cre","n1899"])}
   ]});
 
 // 9 pipeline
-S.push({name:"The full pipeline",kicker:"Putting it together",title:"From a click to your home screen",body:`
+S.push({name:"End-to-end architecture",kicker:"System Architecture",title:"How a recommender system works in production",body:`
   <div class="col" style="gap:30px;height:100%">
-    <div class="row4" style="height:170px">
-      <div class="pbox r" data-s="0"><div class="k">STEP 1</div><h3>Collect</h3><p>Record what each person watches, finishes and rates.</p></div>
-      <div class="pbox r" data-s="1"><div class="k">STEP 2</div><h3>Build the graph</h3><p>Viewers, shows, creators and genres become vertices; activity becomes edges.</p></div>
-      <div class="pbox r" data-s="2"><div class="k">STEP 3</div><h3>Score</h3><p>Count paths or run random walks from the viewer.</p></div>
-      <div class="pbox r" data-s="3"><div class="k">STEP 4</div><h3>Rank &amp; show</h3><p>Top-scoring shows fill the rows on the home screen.</p></div>
+    <div class="row4" style="height:175px">
+      <div class="pbox r" data-s="0"><div class="k">STAGE 1</div><h3>Collect</h3><p>Log implicit &amp; explicit signals (clicks, watch time, purchases, ratings).</p></div>
+      <div class="pbox r" data-s="1"><div class="k">STAGE 2</div><h3>Build Graph</h3><p>Represent users, items and attributes as vertices; weight edges by engagement.</p></div>
+      <div class="pbox r" data-s="2"><div class="k">STAGE 3</div><h3>Retrieve</h3><p>Run random walks / path scoring to shortlist top candidate items.</p></div>
+      <div class="pbox r" data-s="3"><div class="k">STAGE 4</div><h3>Rank &amp; Serve</h3><p>Order the shortlist by predicted relevance and render the user's feed.</p></div>
     </div>
-    <div class="callout blue r" data-s="4">The graph keeps changing: when you finish an episode, new edges appear and your recommendations update.</div>
-    <div class="small r" data-s="4">Note: Netflix's production system combines many models, including deep learning [1]. The graph view is the core intuition behind them.</div>
+    <div class="callout blue r" data-s="4"><b>Online feedback loop:</b> Every new click or watch event adds or re-weights an edge in real time, immediately shifting future random walks.</div>
+    <div class="small r" data-s="4">In modern production systems (Netflix, YouTube, Pinterest), graph walks and Graph Neural Networks generate candidate embeddings that feed a final ranking model [1, 2].</div>
   </div>`,
   steps:[
-   {note:"Let's put it all together. First, Netflix collects what you watch, finish and rate."},
-   {note:"Second, that activity is turned into a graph."},
-   {note:"Third, the system scores shows by counting paths or by random walks."},
-   {note:"Fourth, the highest-scoring shows fill the rows on your screen."},
-   {note:"And this loop never stops: every episode you finish adds edges. To be fair, real Netflix mixes many models, but this graph picture is the core intuition."}
+   {note:"Let's step back and view the complete architecture of a recommender system. Stage 1 collects user interactions: clicks, watch duration, purchases, or ratings."},
+   {note:"Stage 2 updates the User-Item-Attribute graph, assigning higher edge weights to stronger engagement."},
+   {note:"Stage 3 runs graph traversal — path counting, Personalized PageRank, or graph embeddings — to retrieve a shortlist of a few hundred candidate items out of millions."},
+   {note:"Stage 4 ranks those candidates and serves the top items onto the user's screen."},
+   {note:"And the system is a closed feedback loop: every new interaction adds an edge, immediately updating the paths for the next visit."}
   ]});
 
 // 10 limitations
-S.push({name:"Limitations",kicker:"Critical view",title:"Where this approach struggles",body:`
+S.push({name:"Challenges & trade-offs",kicker:"Critical Evaluation",title:"Limitations of graph-based recommenders",body:`
   <div class="row3" style="height:100%;align-content:start">
-    <div class="card r" data-s="0"><span class="tag">Popularity bias</span><h3>Big shows win too easily</h3><p>Popular shows have many edges, so every path seems to lead to them.</p><p class="small" style="margin-top:12px"><b>Fix:</b> divide the score by the show's degree.</p></div>
-    <div class="card r" data-s="1"><span class="tag">Filter bubble</span><h3>Always more of the same</h3><p>Short paths keep you near what you already like.</p><p class="small" style="margin-top:12px"><b>Fix:</b> mix in a few exploratory picks.</p></div>
-    <div class="card r" data-s="2"><span class="tag">Privacy</span><h3>Your history is personal</h3><p>The graph reveals tastes people may not want to share.</p><p class="small" style="margin-top:12px"><b>Fix:</b> anonymise data and limit who can query it.</p></div>
+    <div class="card r" data-s="0"><span class="tag">Popularity bias</span><h3>High-degree hubs dominate</h3><p>Blockbuster items have massive degree, pulling in most random walks like gravity.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Normalize edge weights by vertex degree.</p></div>
+    <div class="card r" data-s="1"><span class="tag">Filter bubbles</span><h3>Echo chambers of taste</h3><p>Short paths trap users inside a narrow cluster of very similar items.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Inject controlled exploration / diversity slots.</p></div>
+    <div class="card r" data-s="2"><span class="tag">Sparsity &amp; privacy</span><h3>New users &amp; sensitive edges</h3><p>New users have few edges, while interaction histories can leak private habits.</p><p class="small" style="margin-top:12px"><b>Mitigation:</b> Onboarding prompts and differential privacy.</p></div>
   </div>`,
   steps:[
-   {note:"No method is perfect. First, popularity bias: hugely popular shows have so many edges that every path leads to them. One fix is to divide by degree."},
-   {note:"Second, the filter bubble: following short paths keeps showing you more of the same, so systems add some exploration."},
-   {note:"Third, privacy: a watch-history graph says a lot about a person, so it must be protected."}
+   {note:"To finish critically, where do graph recommenders struggle? First is popularity bias: high-degree items act like hubs that attract most walks. We fix this by dividing scores by vertex degree."},
+   {note:"Second is the filter bubble: always recommending 3-hop neighbours locks users into a narrow cluster. Production systems intentionally inject exploration slots to break out of the local cluster."},
+   {note:"Third is user cold-start and privacy: new users have almost no edges, and interaction graphs must be anonymised carefully because edge patterns can reveal personal identity."}
   ]});
 
 // 11 summary
 S.push({name:"Summary",kicker:"Conclusion",title:"Key takeaways",body:`
   <div class="two" style="grid-template-columns:1fr 380px;align-items:start">
     <div class="col">
-      <div class="steprow r" data-s="0"><div class="n">1</div><div>Viewers and shows form a <b>bipartite graph</b>.</div></div>
-      <div class="steprow r" data-s="0"><div class="n">2</div><div>A <b>path</b> from you to a show is a reason to recommend it.</div></div>
-      <div class="steprow r" data-s="0"><div class="n">3</div><div><b>More paths</b> means a stronger recommendation; random walks estimate this cheaply.</div></div>
-      <div class="steprow r" data-s="0"><div class="n">4</div><div>Extra vertices (creators, genres) solve the <b>new-show</b> problem.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>A recommender system models users and items as a <b>bipartite graph G = (U, I, E)</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div><b>Collaborative filtering</b> is finding <b>length-3 paths</b> (User → Item → Peer → Item).</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div><b>Random walks (Personalized PageRank)</b> approximate path counts at million-node scale.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">4</div><div>Adding <b>attribute vertices</b> fuses content-based filtering into the graph to solve cold start.</div></div>
       <div class="small r" data-s="1" style="margin-top:14px;font-size:13.5px;line-height:1.6">
-        [1] C. A. Gomez-Uribe, N. Hunt. <i>The Netflix Recommender System.</i> ACM TMIS, 2015.<br>
-        [2] C. Eksombatchai et al. <i>Pixie: Recommending 3+ Billion Items to 200+ Million Users in Real-Time.</i> WWW 2018.<br>
-        [3] L. Page, S. Brin et al. <i>The PageRank Citation Ranking.</i> Stanford, 1999.</div>
+        [1] C. A. Gomez-Uribe, N. Hunt. <i>The Netflix Recommender System: Algorithms, Business Value, and Innovation.</i> ACM TMIS, 2015.<br>
+        [2] C. Eksombatchai et al. <i>Pixie: A System for Recommending 3+ Billion Items to 200+ Million Users in Real-Time.</i> WWW, 2018.<br>
+        [3] L. Page, S. Brin, R. Motwani, T. Winograd. <i>The PageRank Citation Ranking: Bringing Order to the Web.</i> Stanford, 1999.</div>
     </div>
     <div class="card tint r" data-s="1" style="text-align:center;padding:48px 24px">
       <div style="font:600 40px var(--serif);color:var(--navy)">Thank you</div>
@@ -455,8 +455,8 @@ S.push({name:"Summary",kicker:"Conclusion",title:"Key takeaways",body:`
     </div>
   </div>`,
   steps:[
-   {note:"To summarise: Netflix's data is a bipartite graph. Paths are reasons. More paths mean stronger recommendations, and random walks estimate that cheaply. Extra vertex types solve the new-show problem."},
-   {note:"Thank you. I'm happy to take questions."}
+   {note:"To wrap up: first, any recommender system can be understood as a user-item bipartite graph. Second, collaborative filtering is simply following length-3 paths. Third, random walks let us compute those scores at massive scale. And fourth, adding attribute vertices unifies content-based filtering to solve cold start."},
+   {note:"Thank you everyone. I'd be glad to take any questions."}
   ]});
 
 // ============================================================ player
@@ -468,7 +468,7 @@ let pos=-1,rendered=-1,el=null;
 
 function render(si){GEN++;const s=S[si];
   stage.innerHTML=`<div class="slide${s.cover?" cover":""}">${s.cover?"":`<div class="head"><div class="kicker">${s.kicker}</div><h2 class="title">${s.title}</h2><div class="rule"></div></div>`}
-    <div class="body">${s.body}</div><div class="sfoot"><span>How Netflix Recommends · A Graph Theory View</span><span>${si+1} / ${S.length}</span></div></div>`;
+    <div class="body">${s.body}</div><div class="sfoot"><span>How Recommender Systems Work · A Graph Theory View</span><span>${si+1} / ${S.length}</span></div></div>`;
   el=stage.firstElementChild;rendered=si}
 function reveal(k){el.querySelectorAll("[data-s]").forEach(x=>x.classList.toggle("on",+x.dataset.s<=k))}
 function go(p,still){
