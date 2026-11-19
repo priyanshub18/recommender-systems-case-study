@@ -3,880 +3,533 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Netflix Recommends: A Graph Theory View</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-<title>Netflix Recommender Architecture: A Graph Theory Walkthrough</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --page:#0c0d12; --bg2:#14161f; --panel:#171924; --panel2:#1f2233; --line:#2b2f44; --line2:#3c4260;
-  --text:#f0f2f8; --muted:#8f96af; --dim:#5f6680;
-  --red:#e50914; --red-soft:#2a1114; --red-line:#661a20;
-  --accent:#6366f1; --accent-soft:#181938; --accent-line:#383b7a;
-  --green:#10b981; --green-soft:#0d261e; --green-line:#1b5442;
-  --amber:#f59e0b; --amber-soft:#291e0a; --amber-line:#614413;
-  --violet:#a855f7; --violet-soft:#25123d; --violet-line:#58288f;
-  --cyan:#06b6d4; --cyan-soft:#08242d; --cyan-line:#135266;
-  --shadow:0 4px 20px rgba(0,0,0,.4),0 1px 3px rgba(0,0,0,.6);
+  --navy:#14213d; --ink:#1f2937; --muted:#5b6475; --dim:#8a92a3; --line:#dfe3ea; --soft:#f5f7fa;
+  --accent:#9b1c2c; --accent-soft:#fbeef0;
+  --blue:#1d4e89; --blue-soft:#eaf1fa;
+  --green:#1e7a4f; --green-soft:#e9f6ef;
+  --gold:#b7791f; --gold-soft:#fbf4e6;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"Source Sans 3","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--page);color:var(--text);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+html,body{margin:0;height:100%;background:#e8ebf0;color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased}
 body{display:flex;flex-direction:column;overflow:hidden}
-button,select{font:inherit;color:inherit}
-.mono,pre,kbd{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+button{font:inherit;color:inherit}
 
-/* Chrome / Layout */
-header{height:52px;flex:none;display:flex;align-items:center;gap:16px;padding:0 24px;font-size:13.5px;color:var(--muted);border-bottom:1px solid var(--line)}
-header .brand{color:var(--text);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
-header .brand::before{content:"";width:12px;height:12px;border-radius:3px;background:var(--red);box-shadow:0 0 10px rgba(229,9,20,.6)}
-header .brand span{color:var(--dim);font-weight:500;font-size:12px}
-#chap{flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-weight:500}
-#chap b{color:var(--text);font-weight:600}
-
-#viewport{flex:1;position:relative;overflow:hidden;min-height:120px;cursor:pointer;background:radial-gradient(circle at 50% 50%,#131622 0%,#090a0f 100%)}
-#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;background:var(--panel);
-  border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.05)}
-#stage::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:linear-gradient(90deg,var(--red),var(--accent),var(--cyan));opacity:.9;z-index:10}
-
-footer{flex:none;height:58px;display:flex;align-items:center;gap:14px;padding:0 24px 8px;border-top:1px solid var(--line);background:var(--page);transition:opacity .25s}
-body.clean header,body.clean footer{opacity:0;pointer-events:none}
-body.clean header:hover,body.clean footer:hover{opacity:1;pointer-events:auto}
-
-.btn{background:var(--panel);border:1px solid var(--line2);border-radius:9px;height:36px;min-width:38px;padding:0 12px;cursor:pointer;white-space:nowrap;color:var(--text);box-shadow:var(--shadow);font-size:13.5px;display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:all .2s}
-.btn:hover{border-color:var(--red);color:#fff;background:var(--panel2)}
-.btn.on{border-color:var(--red);color:#fff;background:var(--red-soft)}
+/* ---------- chrome ---------- */
+#viewport{flex:1;position:relative;overflow:hidden;cursor:pointer}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform-origin:center;background:#fff;
+  box-shadow:0 12px 40px rgba(20,33,61,.16);overflow:hidden}
+footer{flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:0 20px;background:#fff;border-top:1px solid var(--line)}
+.btn{height:34px;min-width:36px;padding:0 12px;border:1px solid #cdd3dd;border-radius:7px;background:#fff;cursor:pointer;
+  font-size:14px;font-weight:600;color:var(--navy);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--navy);background:var(--soft)}
+.btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
 .btn svg{width:16px;height:16px;fill:currentColor}
+#prog{flex:1;display:flex;gap:4px;align-items:center}
+#prog .seg{flex:var(--n);height:6px;border-radius:3px;background:#e3e7ee;overflow:hidden;cursor:pointer}
+#prog .seg i{display:block;height:100%;width:0;background:var(--navy);transition:width .3s}
+#count{font-size:14px;color:var(--muted);min-width:56px;text-align:right;font-variant-numeric:tabular-nums}
+#notes{position:fixed;left:20px;bottom:68px;width:min(560px,calc(100vw - 40px));background:#fff;border:1px solid var(--line);
+  border-left:4px solid var(--accent);border-radius:8px;padding:14px 16px;font-size:16px;line-height:1.55;color:var(--ink);
+  box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:20}
+#notes small{display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:4px}
+#menu{position:fixed;right:20px;bottom:68px;width:min(380px,calc(100vw - 40px));max-height:70vh;overflow:auto;background:#fff;
+  border:1px solid var(--line);border-radius:8px;padding:6px;box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:21}
+#menu button{display:flex;gap:10px;width:100%;text-align:left;border:0;background:none;padding:9px 10px;border-radius:6px;cursor:pointer;font-size:15px}
+#menu button:hover{background:var(--soft)}
+#menu button.cur{background:var(--blue-soft);color:var(--blue);font-weight:600}
+#menu span{color:var(--dim);min-width:22px;font-variant-numeric:tabular-nums}
+#help{position:fixed;right:20px;bottom:68px;background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 18px;
+  font-size:14px;line-height:2;color:var(--muted);box-shadow:0 12px 32px rgba(20,33,61,.18);z-index:22}
+kbd{font:500 12px var(--mono);border:1px solid #cdd3dd;border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--ink);background:var(--soft)}
+/* fullscreen: only the slide */
+body.fs{background:#fff}
+body.fs footer,body.fs #notes,body.fs #menu,body.fs #help{display:none!important}
+body.fs #stage{box-shadow:none}
+@media (max-width:700px){.btn .t{display:none}}
 
-#prog{flex:1;display:flex;gap:4px;align-items:center;min-width:60px}
-#prog .seg{flex:var(--n);height:5px;border-radius:99px;background:var(--line);position:relative;overflow:hidden;cursor:pointer;transition:background .2s}
-#prog .seg:hover{background:var(--line2)}
-#prog .seg i{position:absolute;left:0;top:0;bottom:0;background:var(--red);border-radius:99px;transition:width .3s ease;box-shadow:0 0 6px rgba(229,9,20,.6)}
-#count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;white-space:nowrap;min-width:64px;text-align:right}
+/* ---------- slide layout (flow layout: nothing absolutely overlaps) ---------- */
+.slide{position:absolute;inset:0;padding:46px 72px 74px 84px;display:flex;flex-direction:column}
+.slide::before{content:"";position:absolute;left:0;top:0;bottom:0;width:12px;background:var(--navy)}
+.head{flex:none}
+.kicker{font:700 13px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.title{font:600 38px/1.15 var(--serif);color:var(--navy);margin:10px 0 0;letter-spacing:-.01em}
+.rule{height:2px;background:var(--line);margin-top:16px;position:relative}
+.rule::after{content:"";position:absolute;left:0;top:0;height:2px;width:90px;background:var(--accent)}
+.body{flex:1;min-height:0;margin-top:24px;overflow:hidden}
+.sfoot{position:absolute;left:84px;right:72px;bottom:24px;display:flex;justify-content:space-between;
+  font-size:13px;color:var(--dim);border-top:1px solid var(--line);padding-top:10px}
 
-#menu{position:fixed;right:24px;bottom:66px;width:min(420px,calc(100vw - 32px));max-height:75vh;overflow:auto;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:8px;z-index:50;box-shadow:0 24px 60px rgba(0,0,0,.8)}
-#menu button{display:flex;width:100%;gap:12px;text-align:left;background:none;border:0;padding:10px 12px;border-radius:7px;cursor:pointer;color:var(--text);font-size:13.5px;transition:background .15s}
-#menu button:hover{background:var(--panel2)}
-#menu button.cur{background:var(--red-soft);color:var(--red);font-weight:600;border:1px solid var(--red-line)}
-#menu span{color:var(--dim);font-variant-numeric:tabular-nums;min-width:24px;font-weight:600}
+.two{display:grid;grid-template-columns:540px 1fr;gap:44px;height:100%;align-items:center}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.row3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 
-#notes{position:fixed;left:24px;bottom:66px;width:min(580px,calc(100vw - 48px));background:#0b0c13f0;backdrop-filter:blur(12px);color:#e2e5f0;border:1px solid var(--line2);border-radius:12px;padding:16px 18px;font-size:14.5px;line-height:1.6;z-index:40;box-shadow:0 20px 50px rgba(0,0,0,.8)}
-#notes small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--red);margin-bottom:6px;font-weight:700}
-#notes b{color:#fff}
+/* reveal */
+.r{opacity:0;transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.r.on{opacity:1;transform:none}
+svg .r{transform:none}
+.instant,.instant *{transition:none!important}
 
-#help{position:fixed;right:24px;bottom:66px;background:var(--panel);border:1px solid var(--line2);border-radius:12px;padding:16px 20px;font-size:13px;color:var(--muted);line-height:2.2;z-index:55;box-shadow:0 20px 50px rgba(0,0,0,.8)}
-kbd{background:var(--panel2);border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:2px 7px;font-size:11.5px;color:var(--text);font-family:"JetBrains Mono",monospace}
+/* text blocks */
+.lead{font-size:21px;line-height:1.5;color:var(--ink);margin:0}
+.small{font-size:15px;color:var(--muted);line-height:1.5}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px 20px;background:#fff}
+.card.tint{background:var(--soft)}
+.card h3{font:600 21px/1.25 var(--serif);color:var(--navy);margin:0 0 8px}
+.card p{margin:0;font-size:17px;line-height:1.5;color:var(--ink)}
+.card .tag{display:inline-block;font:700 12px var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:14px 18px;border-radius:0 8px 8px 0;font-size:19px;line-height:1.45}
+.callout.blue{border-color:var(--blue);background:var(--blue-soft)}
+.callout.green{border-color:var(--green);background:var(--green-soft)}
+.callout.gold{border-color:var(--gold);background:var(--gold-soft)}
+.def{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:12px 4px;border-bottom:1px solid var(--line);align-items:baseline}
+.def b{font:600 20px var(--serif);color:var(--navy)}
+.def span{font-size:18px;line-height:1.45}
+.def i{font-style:normal;color:var(--muted)}
+.stat{text-align:left}
+.stat .num{font:700 50px/1 var(--serif);color:var(--navy)}
+.stat .lab{font-size:18px;line-height:1.4;margin-top:10px}
+.stat .src{font-size:13px;color:var(--dim);margin-top:6px}
+.steprow{display:grid;grid-template-columns:36px 1fr;gap:14px;align-items:start}
+.steprow .n{width:36px;height:36px;border-radius:50%;background:var(--navy);color:#fff;font:700 16px var(--sans);display:flex;align-items:center;justify-content:center}
+.steprow .n.acc{background:var(--accent)} .steprow .n.blu{background:var(--blue)}
+.steprow div:last-child{font-size:18px;line-height:1.45;padding-top:5px}
+.mono{font-family:var(--mono);font-size:14px;line-height:1.8;color:var(--ink)}
+.badge{display:inline-block;font:700 13px var(--sans);padding:3px 10px;border-radius:99px;background:var(--accent-soft);color:var(--accent)}
+.badge.grey{background:var(--soft);color:var(--muted)}
+.badge.blue{background:var(--blue-soft);color:var(--blue)}
+.pt-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.pt-h b{font:600 19px var(--serif);color:var(--navy)}
 
-/* Stage Primitives */
-.abs{position:absolute}
-.fx{opacity:0;transform:translateY(14px);transition:opacity .55s ease,transform .65s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .4s,background .4s,filter .4s,color .4s}
-.fx.l{transform:translateX(-26px)} .fx.r{transform:translateX(26px)} .fx.p{transform:scale(.86)} .fx.d{transform:translateY(-14px)}
-.fx.in{opacity:1;transform:none}
-.gone{opacity:0!important;transform:scale(.95)!important;pointer-events:none}
-.dim{opacity:.25!important;filter:grayscale(.7)}
-.instant,.instant *{transition:none!important;animation-duration:0s!important;animation-delay:0s!important}
+/* bars */
+.brow{display:grid;grid-template-columns:150px 1fr 70px;gap:12px;align-items:center;height:40px}
+.brow .lab{font-size:17px;font-weight:600;text-align:right;white-space:nowrap}
+.brow .track{height:22px;background:var(--soft);border-radius:4px;overflow:hidden}
+.brow .bar{height:100%;width:0;background:var(--accent);border-radius:4px;transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.brow .bar.b2{background:var(--blue)}
+.brow .val{font:600 17px var(--sans);color:var(--navy);font-variant-numeric:tabular-nums}
 
-.stitle{font-size:27px;font-weight:700;letter-spacing:-.025em;color:var(--text);z-index:5}
-.stitle small{display:block;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--red);font-weight:700;margin-bottom:6px}
+/* pipeline */
+.pbox{border:1px solid var(--line);border-top:4px solid var(--navy);border-radius:8px;padding:16px 18px;background:#fff;position:relative;height:100%}
+.pbox .k{font:700 13px var(--sans);letter-spacing:.12em;color:var(--accent)}
+.pbox h3{font:600 21px var(--serif);color:var(--navy);margin:6px 0 8px}
+.pbox p{margin:0;font-size:16.5px;line-height:1.45}
+.pbox:not(:last-child)::after{content:"→";position:absolute;right:-15px;top:42%;font-size:20px;color:var(--dim)}
 
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;box-shadow:var(--shadow)}
-.card.alt{background:var(--bg2)}
-.card h4{margin:0 0 10px;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+/* svg graph */
+svg.g{width:100%;height:auto;display:block;overflow:visible}
+svg.g .edge{stroke:#c3cad6;stroke-width:2.5;transition:stroke .4s,stroke-width .4s,opacity .45s}
+svg.g .edge.hl{stroke:var(--accent);stroke-width:5}
+svg.g .edge.hl2{stroke:var(--blue);stroke-width:5}
+svg.g .edge.dash{stroke-dasharray:6 6}
+svg.g .node{transition:opacity .45s}
+svg.g .node circle,svg.g .node rect{transition:fill .4s,stroke .4s}
+svg.g .node text{font-family:var(--sans);font-weight:600;transition:fill .4s;pointer-events:none}
+svg.g .v circle{fill:var(--navy)} svg.g .v text{fill:#fff;font-size:14px}
+svg.g .s rect{fill:#fff;stroke:var(--accent);stroke-width:2} svg.g .s text{fill:var(--ink);font-size:15px}
+svg.g .a rect{fill:var(--gold-soft);stroke:var(--gold);stroke-width:2;stroke-dasharray:5 4} svg.g .a text{fill:#7a4e0e;font-size:14.5px}
+svg.g .p circle{fill:#fff;stroke:var(--navy);stroke-width:2.5} svg.g .p text{fill:var(--navy);font-size:17px}
+svg.g .v.hl circle{fill:var(--accent)}
+svg.g .v.hl2 circle{fill:var(--blue)}
+svg.g .s.hl rect{fill:var(--accent)} svg.g .s.hl text{fill:#fff}
+svg.g .s.hl2 rect{fill:var(--blue-soft);stroke:var(--blue)}
+svg.g .p.hl circle{fill:var(--accent);stroke:var(--accent)} svg.g .p.hl text{fill:#fff}
+svg.g .a.hl rect{fill:var(--gold);stroke:var(--gold)} svg.g .a.hl text{fill:#fff}
+svg.g .fade{opacity:.22}
+svg.g .glab{font:700 12.5px var(--sans);letter-spacing:.14em;fill:var(--dim)}
+svg.g .note{font:600 13px var(--sans);fill:var(--accent)}
+svg.g #tok{fill:var(--gold);stroke:#fff;stroke-width:3}
 
-.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);font-size:13px;margin:3px;color:var(--text)}
-.chip.red{border-color:var(--red-line);color:#ff858d;background:var(--red-soft)}
-.chip.accent{border-color:var(--accent-line);color:#a5b4fc;background:var(--accent-soft)}
-.chip.violet{border-color:var(--violet-line);color:#d8b4fe;background:var(--violet-soft)}
-.chip.amber{border-color:var(--amber-line);color:#fcd34d;background:var(--amber-soft)}
-.chip.green{border-color:var(--green-line);color:#6ee7b7;background:var(--green-soft)}
-.chip.cyan{border-color:var(--cyan-line);color:#67e8f9;background:var(--cyan-soft)}
-
-.badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:5px;text-transform:uppercase}
-.badge.red{background:var(--red-soft);color:#ff757f;border:1px solid var(--red-line)}
-.badge.accent{background:var(--accent-soft);color:#a5b4fc;border:1px solid var(--accent-line)}
-.badge.green{background:var(--green-soft);color:#6ee7b7;border:1px solid var(--green-line)}
-.badge.amber{background:var(--amber-soft);color:#fcd34d;border:1px solid var(--amber-line)}
-
-/* SVG Wires */
-svg.wires{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none;z-index:2}
-.wire{fill:none;stroke:#32374e;stroke-width:2;stroke-dasharray:6 6;opacity:0;transition:opacity .6s,stroke .4s,stroke-width .4s}
-.wire.in{opacity:1;animation:dash 1.6s linear infinite}
-.wire.red{stroke:var(--red);stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(229,9,20,.6))}
-.wire.accent{stroke:var(--accent);stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(99,102,241,.6))}
-.wire.green{stroke:var(--green);stroke-width:2.5}
-.wire.solid{stroke-dasharray:none;animation:none}
-@keyframes dash{to{stroke-dashoffset:-24}}
-
-/* Hero & Pills */
-.hero{text-align:center;transition:transform 1s cubic-bezier(.2,.8,.2,1)}
-.h1{font-size:52px;font-weight:800;letter-spacing:-.035em;line-height:1.15;color:#fff}
-.h1 em{font-style:normal;color:var(--red);text-shadow:0 0 30px rgba(229,9,20,.5)}
-.sub{font-size:19px;color:var(--muted);margin-top:14px}
-.pill{display:flex;align-items:center;gap:18px;font-size:20px;padding:15px 24px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);color:var(--text)}
-.pill .pi{font:700 12px "JetBrains Mono",monospace;letter-spacing:.12em;padding:6px 11px;border-radius:6px;min-width:85px;text-align:center}
-.pill b{color:var(--c);font-weight:700}
-.pcard{border-radius:12px;border:1px solid var(--line);background:var(--panel);padding:18px 20px}
-.pcard .n{font:700 12.5px "JetBrains Mono",monospace;color:var(--red);margin-bottom:8px}
-.pcard h3{margin:0 0 8px;font-size:18px;font-weight:700;color:#fff}
-.pcard p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
-
-/* Graph Node Components */
-.gnode{border-radius:10px;background:var(--bg2);border:1px solid var(--line);padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .3s}
-.gnode:hover,.gnode.act{border-color:var(--red);box-shadow:0 0 15px rgba(229,9,20,.3);transform:scale(1.03)}
-.gnode .avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font:700 13px "JetBrains Mono",monospace;flex:none}
-.gnode .info{flex:1;min-width:0}
-.gnode .name{font-size:14px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gnode .subtxt{font-size:11.5px;color:var(--muted);margin-top:2px}
-
-.mnode{border-radius:10px;background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--c);padding:10px 14px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;transition:all .3s}
-.mnode:hover,.mnode.act{border-color:var(--c);box-shadow:0 0 15px color-mix(in srgb,var(--c) 40%,transparent);transform:scale(1.03)}
-.mnode .post{width:38px;height:48px;border-radius:6px;background:var(--panel2);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
-.mnode .title{font-size:14px;font-weight:700;color:#fff}
-.mnode .tags{display:flex;gap:4px;margin-top:3px;font-size:11px;color:var(--dim)}
-
-/* Formula display */
-.formula-box{background:var(--bg2);border:1px solid var(--line);border-left:4px solid var(--red);border-radius:10px;padding:16px 20px;font:500 15px/1.6 "JetBrains Mono",monospace;color:#e2e5f0}
-.formula-box b{color:var(--red)}
-
-/* Bar Chart */
-.brow{display:flex;align-items:center;height:34px;margin-bottom:8px}
-.brow .lab{width:210px;font-size:13.5px;font-weight:600;text-align:right;padding-right:14px;color:#d5d8e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brow .bar-wrap{flex:1;height:20px;background:var(--bg2);border-radius:5px;overflow:hidden;position:relative}
-.brow .bar{height:100%;border-radius:5px;background:var(--accent);width:0;transition:width 1.1s cubic-bezier(.2,.8,.2,1),background .4s;box-shadow:0 0 10px rgba(99,102,241,.4)}
-.brow .val{width:80px;padding-left:12px;font:700 13px "JetBrains Mono",monospace;color:#fff}
-.brow.top .bar{background:var(--red);box-shadow:0 0 12px rgba(229,9,20,.6)}
-
-/* Matrix representation */
-.matrix{display:inline-grid;gap:4px;padding:10px;background:var(--bg2);border:1px solid var(--line);border-radius:8px;font:600 12px "JetBrains Mono",monospace}
-.matrix .cell{width:34px;height:30px;display:flex;align-items:center;justify-content:center;background:var(--panel);border-radius:4px;color:var(--muted);transition:all .3s}
-.matrix .cell.hi{background:var(--red-soft);color:var(--red);border:1px solid var(--red-line);box-shadow:0 0 8px rgba(229,9,20,.4)}
-.matrix .cell.zero{color:var(--dim);opacity:.4}
-
-/* Dot Canvas for Random Walk */
-canvas.walk-canvas{position:absolute;left:0;top:0;width:1280px;height:720px;pointer-events:none;z-index:3}
+/* cover */
+.cover{padding:0}
+.cover .wrap{position:absolute;left:96px;top:0;bottom:0;width:640px;display:flex;flex-direction:column;justify-content:center}
+.cover .ck{font:700 14px var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+.cover h1{font:600 56px/1.1 var(--serif);color:var(--navy);margin:18px 0 0;letter-spacing:-.015em}
+.cover .sub{font-size:23px;line-height:1.45;color:var(--muted);margin:20px 0 0}
+.cover .who{margin-top:44px;padding-top:20px;border-top:2px solid var(--line);font-size:18px;line-height:1.6}
+.cover .who b{font:600 21px var(--serif);color:var(--navy)}
+.cover .art{position:absolute;right:56px;top:110px;width:440px}
+.cover .sfoot{display:none}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="brand">NETFLIX GRAPH SYSTEM <span>TOPOLOGICAL ENGINE</span></div>
-  <div id="chap"><b>01</b> &nbsp;The Graph Problem</div>
-</header>
-
-<div id="viewport">
-  <div id="stage"></div>
-</div>
+<div id="viewport"><div id="stage"></div></div>
 
 <footer>
-  <button class="btn" id="bPrev" title="Previous (Left Arrow)"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg><span class="t">Prev</span></button>
-  <button class="btn" id="bNext" title="Next (Space / Right Arrow)"><span class="t">Next</span><svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg></button>
-  
+  <button class="btn" id="bPrev" title="Previous (←)"><svg viewBox="0 0 24 24"><path d="M15.4 7.4 14 6l-6 6 6 6 1.4-1.4-4.6-4.6z"/></svg><span class="t">Prev</span></button>
+  <button class="btn" id="bNext" title="Next (Space / →)"><span class="t">Next</span><svg viewBox="0 0 24 24"><path d="M10 6 8.6 7.4l4.6 4.6-4.6 4.6L10 18l6-6z"/></svg></button>
   <div id="prog"></div>
-  <div id="count">1 / 11</div>
-  
-  <button class="btn" id="bMenu" title="Menu (M)"><span>Menu</span></button>
-  <button class="btn on" id="bNotes" title="Presenter Notes (N)"><span>Notes</span></button>
-  <button class="btn" id="bHelp" title="Shortcuts (?)"><span>?</span></button>
+  <div id="count"></div>
+  <button class="btn" id="bMenu" title="Slides (M)"><span>Slides</span></button>
+  <button class="btn" id="bNotes" title="Speaker notes (N)"><span>Notes</span></button>
+  <button class="btn" id="bFull" title="Fullscreen (F)"><svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg><span class="t">Fullscreen</span></button>
+  <button class="btn" id="bHelp" title="Shortcuts (?)">?</button>
 </footer>
 
+<div id="notes" hidden></div>
 <div id="menu" hidden></div>
-<div id="notes"></div>
 <div id="help" hidden>
-  <div style="font-weight:700;margin-bottom:6px;color:#fff">Keyboard Controls</div>
-  <div><kbd>Space</kbd> / <kbd>&rarr;</kbd> : Next step</div>
-  <div><kbd>&larr;</kbd> : Previous step</div>
-  <div><kbd>]</kbd> / <kbd>[</kbd> : Jump to next / prev chapter</div>
-  <div><kbd>M</kbd> : Toggle chapter menu</div>
-  <div><kbd>N</kbd> : Toggle presenter speech notes</div>
-  <div><kbd>F</kbd> : Toggle fullscreen mode</div>
-  <div><kbd>H</kbd> : Toggle clean minimalist view</div>
-  <div><kbd>Esc</kbd> : Close all modals</div>
+  <div><kbd>Space</kbd> <kbd>→</kbd> next &nbsp; <kbd>←</kbd> back</div>
+  <div><kbd>F</kbd> fullscreen &nbsp; <kbd>Esc</kbd> exit</div>
+  <div><kbd>N</kbd> speaker notes &nbsp; <kbd>M</kbd> slide list</div>
+  <div><kbd>Home</kbd> first &nbsp; <kbd>End</kbd> last</div>
 </div>
 
 <script>
-const stage=document.getElementById("stage");
-let INSTANT=false,GEN=0;
-function mk(tag,cls,html,css){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;if(css)e.style.cssText=css;return e}
-function put(p,cls,html,x,y,w,h,css=""){return p.appendChild(mk("div","abs "+(cls||""),html,`left:${x}px;top:${y}px;`+(w?`width:${w}px;`:"")+(h?`height:${h}px;`:"")+css))}
-function show(...a){a.flat().forEach(e=>e&&e.classList.add("in"))}
-function hide(...a){a.flat().forEach(e=>e&&e.classList.add("gone"))}
-function stag(list,step=.07,base=0){list=[...list];list.forEach((e,i)=>e.style.transitionDelay=(base+i*step).toFixed(2)+"s");return list}
-function cnt(e,to,{dec=0,ms=1000,fmt,delay=0}={}){const g=GEN,from=parseFloat(e.dataset.v||"0");e.dataset.v=to;const f=fmt||(v=>v.toFixed(dec));
-  if(INSTANT){e.textContent=f(to);return}const t0=performance.now()+delay;
-  const tick=n=>{if(g!==GEN)return;const k=Math.max(0,Math.min(1,(n-t0)/ms));e.textContent=f(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)};requestAnimationFrame(tick)}
-let BUILD_IDX=0;
-function title(s,kick,text){kick=String(BUILD_IDX).padStart(2,"0")+" · "+kick.replace(/^\d+ · /,"");return put(s,"stitle fx",`<small>${kick}</small>${text}`,48,26)}
-function wires(s){const v=document.createElementNS("http://www.w3.org/2000/svg","svg");v.setAttribute("class","wires");v.setAttribute("viewBox","0 0 1280 720");s.appendChild(v);return v}
-function wire(svg,d,cls=""){const p=document.createElementNS("http://www.w3.org/2000/svg","path");p.setAttribute("d",d);p.setAttribute("class","wire "+cls);svg.appendChild(p);return p}
+// ============================================================ graph data
+const BIP={vb:"0 0 560 400",labels:[[100,24,"VIEWERS"],[420,24,"SHOWS"]],
+  nodes:[
+    {id:"riya",x:100,y:78,t:"Riya",k:"v"},{id:"arjun",x:100,y:168,t:"Arjun",k:"v"},
+    {id:"sara",x:100,y:258,t:"Sara",k:"v"},{id:"dev",x:100,y:348,t:"Dev",k:"v"},
+    {id:"st",x:420,y:60,t:"Stranger Things",k:"s"},{id:"dark",x:420,y:132,t:"Dark",k:"s"},
+    {id:"bm",x:420,y:204,t:"Black Mirror",k:"s"},{id:"sg",x:420,y:276,t:"Squid Game",k:"s"},
+    {id:"crown",x:420,y:348,t:"The Crown",k:"s"}],
+  edges:[["riya","st"],["riya","dark"],["arjun","st"],["arjun","dark"],["arjun","bm"],
+         ["sara","dark"],["sara","bm"],["sara","sg"],["dev","crown"]]};
 
-const SCENES=[];
+function key(a,b){return [a,b].sort().join("--")}
+function graphSVG(G,opt={}){
+  const N={};G.nodes.forEach(n=>N[n.id]=n);
+  const es=G.edges.map(([a,b,s,cls])=>{const A=N[a],B=N[b];
+    return `<line id="e-${key(a,b)}" class="edge ${cls||""}${s!=null?" r":""}" ${s!=null?`data-s="${s}"`:""} x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}"/>`}).join("");
+  const ns=G.nodes.map(n=>{const r=n.s!=null?` r" data-s="${n.s}`:"";
+    if(n.k==="v")return `<g id="n-${n.id}" class="node v${r}"><circle cx="${n.x}" cy="${n.y}" r="28"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`;
+    if(n.k==="p")return `<g id="n-${n.id}" class="node p${r}"><circle cx="${n.x}" cy="${n.y}" r="25"/><text x="${n.x}" y="${n.y+6}" text-anchor="middle">${n.t}</text></g>`;
+    const w=n.w||160,h=40;
+    return `<g id="n-${n.id}" class="node ${n.k}${r}"><rect x="${n.x-w/2}" y="${n.y-h/2}" width="${w}" height="${h}" rx="7"/><text x="${n.x}" y="${n.y+5}" text-anchor="middle">${n.t}</text></g>`}).join("");
+  const ls=(G.labels||[]).map(([x,y,t,c])=>`<text class="${c||"glab"}" x="${x}" y="${y}" text-anchor="middle">${t}</text>`).join("");
+  return `<svg class="g" viewBox="${G.vb}">${ls}${es}${ns}${opt.token?`<circle id="tok" r="9" cx="-50" cy="-50"/>`:""}</svg>`;
+}
+const q=(el,id)=>el.querySelector("#"+id);
+function hl(el,list,cls="hl"){list.forEach(x=>{const id=x.includes("-")?"e-"+key(...x.split("-")):"n-"+x;const e=q(el,id);e&&e.classList.add(cls)})}
+function fade(el,list){list.forEach(x=>{const id=x.includes("-")?"e-"+key(...x.split("-")):"n-"+x;const e=q(el,id);e&&e.classList.add("fade")})}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. INTRO
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"The Netflix Graph Problem",build(s){
-  const c={};
-  c.hero=put(s,"hero","",0,150,1280);
-  c.hero.innerHTML=`<div class="fx h1">How Netflix Recommends: <em>A Graph Theory Walkthrough</em></div>
-    <div class="fx sub">Bipartite Topologies, Personalized PageRank, Graph Neural Networks & Real-Time Random Walks</div>`;
-  c.p=[
-    ["BIPARTITE TOPOLOGY","var(--red)","Models <b>260M subscribers</b> and <b>15,000 titles</b> with zero matrix memory blowup."],
-    ["RANDOM WALKS & PPR","var(--accent)","Walks multi-hop paths to sample taste diffusion without computing $O(N^2)$ cross-products."],
-    ["GRAPH NEURAL NETWORKS","var(--green)","Message-passing convolutions aggregate deep non-linear community structure into 64D vectors."]
-  ].map(([k,col,t],i)=>put(s,"pill fx l",`<span class="pi" style="background:${col}1a;color:${col};border:1px solid ${col}44">${k}</span><span>${t}</span>`,160,255+i*70,960,"",`--c:${col}`));
-  
-  c.cards=[
-    ["01","Extreme Sparsity (99.8%)","A 260M × 15,000 user-item matrix has 3.9 Trillion cells, 99.8% empty. Graphs store only active edges."],
-    ["02","Paths Explain 'Why'","A 2-hop path (User → Show A → User B → Show B) provides auditable, human-interpretable reasoning."],
-    ["03","Heterogeneous Context","Actors, directors, genres, languages, and time of day live as typed vertices in the same topology."]
-  ].map(([n,h,p],i)=>put(s,"pcard fx",`<div class="n">${n}</div><h3>${h}</h3><p>${p}</p>`,48+i*402,485,380,185));
-  return c},steps:[
-  {say:"Welcome. Today we're looking inside Netflix's recommendation engine not as black-box machine learning, but strictly through the lens of graph theory.",run:c=>show([...c.hero.children])},
-  {say:"Netflix serves over 260 million subscribers across 15,000 titles. Traditional tabular databases and flat matrices collapse under this scale. Graph theory is how they turn that complexity into real-time sub-15ms recommendations.",run:c=>show(stag(c.p,.12))},
-  {say:"Three foundational laws govern this entire system: extreme sparsity turns matrices into graphs, multi-hop paths explain why content is shown, and heterogeneous entities connect everything.",run:c=>show(stag(c.cards,.12))}
-]});
+// random walk with restart: computed live, so the numbers on the slide are real
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const WALK=(()=>{const adj={};BIP.edges.forEach(([a,b])=>{(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});
+  const rnd=mulberry32(42);let cur="riya";const c={},STEPS=100000;
+  for(let i=0;i<STEPS;i++){if(rnd()<0.15)cur="riya";else{const nb=adj[cur];cur=nb[Math.floor(rnd()*nb.length)]}c[cur]=(c[cur]||0)+1}
+  const per=id=>Math.round((c[id]||0)/STEPS*1000);return {bm:per("bm"),sg:per("sg"),crown:per("crown")}})();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. BIPARTITE GRAPH
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"The Core Bipartite Graph G = (U, V, E)",build(s){
-  const c={};title(s,"02 · The Bipartite Topology","User-Item Interaction Network G = (U, V, E)");
-  c.svg=wires(s);
-  
-  // Left: Users
-  c.uhead=put(s,"fx","",48,80,300,"","font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase");
-  c.uhead.textContent="Subscribers U (Disjoint Partition 1)";
-  
-  const UDATA=[
-    {id:"u1",name:"Alice (28)",sub:"Sci-Fi, Mind-Benders, Mystery",col:"#e50914"},
-    {id:"u2",name:"Bob (34)",sub:"Nordic Noir, Psychological Thrillers",col:"#6366f1"},
-    {id:"u3",name:"Charlie (22)",sub:"Korean Drama, Survival Thrillers",col:"#10b981"},
-    {id:"u4",name:"Diana (45)",sub:"Historical Drama, British Royalty",col:"#f59e0b"}
-  ];
-  c.unodes=UDATA.map((u,i)=>put(s,"gnode fx l",`
-    <div class="avatar" style="background:${u.col}22;color:${u.col};border:1px solid ${u.col}55">${u.id.toUpperCase()}</div>
-    <div class="info"><div class="name">${u.name}</div><div class="subtxt">${u.sub}</div></div>
-  `,48,110+i*88,320,72));
+let GEN=0;
+function animateToken(el){const g=++GEN;const tok=q(el,"tok");if(!tok)return;
+  const P={};BIP.nodes.forEach(n=>P[n.id]=n);
+  const seq=["riya","dark","sara","sg","sara","bm","arjun","st","riya"];let i=0;
+  const hop=()=>{if(g!==GEN||!document.body.contains(tok))return;
+    const a=P[seq[i]],b=P[seq[(i+1)%seq.length]];const t0=performance.now(),D=750;
+    const tick=n=>{if(g!==GEN)return;const k=Math.min(1,(n-t0)/D),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      tok.setAttribute("cx",a.x+(b.x-a.x)*e);tok.setAttribute("cy",a.y+(b.y-a.y)*e);
+      if(k<1)requestAnimationFrame(tick);else{i=(i+1)%(seq.length-1);setTimeout(hop,260)}};
+    requestAnimationFrame(tick)};
+  hop();
+}
+function bars(el){el.querySelectorAll(".bar[data-w]").forEach(b=>b.style.width=b.dataset.w+"%")}
 
-  // Right: Titles
-  c.vhead=put(s,"fx","",912,80,300,"","font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;text-align:right");
-  c.vhead.textContent="Media Items V (Disjoint Partition 2)";
+// ============================================================ slides
+const S=[];
 
-  const MDATA=[
-    {id:"v1",t:"Stranger Things",sub:"Sci-Fi · 80s Horror · 4 Seasons",c:"#e50914",ic:"👾"},
-    {id:"v2",t:"Dark",sub:"German Mystery · Time Travel",c:"#6366f1",ic:"⏳"},
-    {id:"v3",t:"Black Mirror",sub:"Dystopian Tech · Anthology",c:"#a855f7",ic:"🪞"},
-    {id:"v4",t:"Squid Game",sub:"Korean Survival · High Tension",c:"#10b981",ic:"🦑"},
-    {id:"v5",t:"The Crown",sub:"British Royalty · Political Drama",c:"#f59e0b",ic:"👑"}
-  ];
-  c.vnodes=MDATA.map((m,i)=>put(s,"mnode fx r",`
-    <div class="post">${m.ic}</div>
-    <div class="info"><div class="title">${m.t}</div><div class="tags">${m.sub}</div></div>
-  `,912,106+i*78,320,66,`--c:${m.c}`));
+// 1 cover
+S.push({cover:true,name:"Title",body:`
+  <div class="wrap">
+    <div class="ck r" data-s="0">Graph Theory · Case Study</div>
+    <h1 class="r" data-s="0">How Netflix Decides<br>What You Watch Next</h1>
+    <p class="sub r" data-s="0">Understanding recommender systems through vertices, edges, paths and random walks.</p>
+    <div class="who r" data-s="1"><b>Priyanshu Bhardwaj</b><br>B.Tech Computer Science &amp; Engineering · NIT Jalandhar<br><span style="color:var(--muted)">November 2026</span></div>
+  </div>
+  <div class="art r" data-s="0" style="opacity:.0">${graphSVG(BIP)}</div>`,
+  steps:[
+   {note:"Good morning everyone. Today I'll explain how Netflix chooses the shows on your home screen, using one simple idea from graph theory.",run:el=>{const a=el.querySelector(".art");a.style.transition="opacity .8s";a.style.opacity=".35"}},
+   {note:"No heavy machine learning is needed to follow this. If you know what a graph and a path are, you'll understand the whole talk."}
+  ]});
 
-  // Wires connecting U and V
-  // Center math box
-  c.math=put(s,"formula-box fx",`
-    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">BIPARTITE ADJACENCY MATRIX A</div>
-    A = [  0   |  R  ]<br>
-        [ ---+--- ]  where R &isin; &real;<sup>|U| &times; |V|</sup><br>
-        [ R<sup>T</sup>  |  0  ]<br>
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">No internal edges within U or within V: E &sube; U &times; V.</div>
-  `,410,120,460,130);
-
-  c.edges=[
-    {from:0,to:0,w:0.98,cls:"red",desc:"Alice &bull; Stranger Things (98% match, Rewatched)"},
-    {from:0,to:1,w:1.00,cls:"accent",desc:"Alice &bull; Dark (Binged in 48h, Thumbs Up)"},
-    {from:1,to:1,w:0.92,cls:"accent",desc:"Bob &bull; Dark (Completed, 5★ rating)"},
-    {from:1,to:2,w:0.95,cls:"violet",desc:"Bob &bull; Black Mirror (100% completion)"},
-    {from:2,to:3,w:0.99,cls:"green",desc:"Charlie &bull; Squid Game (Completed in 1 night)"},
-    {from:3,to:4,w:0.96,cls:"amber",desc:"Diana &bull; The Crown (Watched all 6 seasons)"}
-  ];
-  c.wires=c.edges.map(e=>{
-    const y1=146+e.from*88;
-    const y2=139+e.to*78;
-    return wire(c.svg,`M 368 ${y1} C 540 ${y1}, 740 ${y2}, 912 ${y2}`,e.cls);
-  });
-
-  c.edgecard=put(s,"card fx alt",`
-    <h4>Weighted Edge Encoding w<sub>uv</sub></h4>
-    <div style="font-size:13px;line-height:1.6;color:var(--text)">
-      An edge is never just a 1 or 0. Netflix weights edges using implicit telemetric feedback:<br>
-      <span class="chip red">Completion &ge; 90% (+0.4)</span>
-      <span class="chip accent">Rewatched (+0.3)</span>
-      <span class="chip green">Thumbs Up (+0.2)</span>
-      <span class="chip amber">No Drop-off (+0.1)</span>
+// 2 problem
+S.push({name:"The problem",kicker:"Motivation",title:"Too many shows, too little screen",body:`
+  <div class="col" style="gap:26px">
+    <div class="row3">
+      <div class="card tint stat r" data-s="0"><div class="num">1000s</div><div class="lab">of titles in the Netflix catalogue</div></div>
+      <div class="card tint stat r" data-s="1"><div class="num">~40</div><div class="lab">titles fit on one home screen</div></div>
+      <div class="card tint stat r" data-s="2"><div class="num">80%</div><div class="lab">of hours watched come from recommendations</div><div class="src">Gomez-Uribe &amp; Hunt, 2015 [1]</div></div>
     </div>
-  `,410,270,460,140);
+    <div class="callout blue r" data-s="3"><b>The question:</b> out of thousands of titles, which ~40 should <i>this</i> person see tonight?</div>
+    <div class="callout r" data-s="4"><b>Our answer:</b> draw viewers and shows as a <b>graph</b>, then recommend the shows that are <b>closest to you</b> in that graph.</div>
+  </div>`,
+  steps:[
+   {note:"Netflix has thousands of titles."},
+   {note:"But your TV screen only shows about forty of them at once."},
+   {note:"And this choice matters: Netflix reported that about 80 percent of the hours people watch come from recommendations, not from search."},
+   {note:"So the real question is: which forty titles should this specific person see?"},
+   {note:"Our answer for today: treat it as a graph problem. Recommend what is close to you in the graph."}
+  ]});
 
-  c.triad=put(s,"card fx glow-teal",`
-    <h4>The Taste Bridge (Bob & Alice)</h4>
-    <div style="font-size:14px;line-height:1.5;color:var(--text)">
-      Notice that <b style="color:#e50914">Alice</b> and <b style="color:#6366f1">Bob</b> have never met, but they both connect to <b style="color:#a855f7">Dark</b>.<br>
-      In graph theory, this creates an open wedge (2-hop path). This wedge is the seed of collaborative filtering.
+// 3 graph basics
+const BASIC={vb:"0 0 460 400",nodes:[
+  {id:"A",x:80,y:90,t:"A",k:"p"},{id:"B",x:280,y:60,t:"B",k:"p"},{id:"C",x:180,y:210,t:"C",k:"p"},
+  {id:"D",x:380,y:220,t:"D",k:"p"},{id:"E",x:280,y:340,t:"E",k:"p"}],
+  edges:[["A","B"],["A","C"],["B","C"],["C","D"],["B","D"],["D","E"]]};
+S.push({name:"Graph basics",kicker:"Background",title:"Graph theory in one minute",body:`
+  <div class="two">
+    <div>${graphSVG(BASIC)}</div>
+    <div class="col" style="gap:0">
+      <p class="lead r" data-s="0" style="margin-bottom:10px">A <b>graph</b> is just dots and lines. Four words are all we need:</p>
+      <div class="def r" data-s="1"><b>Vertex</b><span>A dot. <i>For us: a viewer or a show.</i></span></div>
+      <div class="def r" data-s="2"><b>Edge</b><span>A line joining two vertices. <i>“Riya watched Dark.”</i></span></div>
+      <div class="def r" data-s="3"><b>Degree</b><span>How many edges touch a vertex. <i>C has degree 3.</i></span></div>
+      <div class="def r" data-s="4" style="border:0"><b>Path</b><span>A route along edges. <i>A → C → D → E has length 3.</i></span></div>
     </div>
-  `,410,430,460,130);
+  </div>`,
+  steps:[
+   {note:"Quick refresher. A graph is a set of dots and the lines between them."},
+   {note:"Each dot is a vertex. In our story a vertex is either a person or a show.",run:el=>hl(el,["A"])},
+   {note:"An edge connects two vertices. Here, an edge will mean 'this person watched this show'.",run:el=>hl(el,["A-B"])},
+   {note:"The degree of a vertex is the number of edges touching it. C touches A, B and D, so its degree is 3.",run:el=>{hl(el,["C","A-C","B-C","C-D"],"hl2")}},
+   {note:"A path is a route that follows edges. A to C to D to E is a path of length three. Paths are the heart of this talk.",run:el=>{el.querySelectorAll(".hl,.hl2").forEach(x=>x.classList.remove("hl","hl2"));hl(el,["A","C","D","E","A-C","C-D","D-E"])}}
+  ]});
 
-  return c},steps:[
-  {say:"Let's construct the core structure. On the left, we have our subscribers: Alice, Bob, Charlie, and Diana.",run:c=>{show(c.uhead);show(stag(c.unodes,.1))}},
-  {say:"On the right, we have our catalog of titles: Stranger Things, Dark, Black Mirror, Squid Game, and The Crown.",run:c=>{show(c.vhead);show(stag(c.vnodes,.1))}},
-  {say:"When subscribers watch and rate shows, edges form. This is a strictly bipartite graph: edges only exist between a user and a show, never between two users or two shows directly.",run:c=>{show(stag(c.wires,.08));show(c.math)}},
-  {say:"Crucially, these edges are attributed and weighted. A quick pause after 5 minutes has weight 0.1; binging an entire series with a thumbs up has weight 1.0.",run:c=>show(c.edgecard)},
-  {say:"Look at Alice and Bob. Both connect to Dark. In graph theory, Dark is their mutual neighbor. That 2-hop connection is how Netflix infers shared taste.",run:c=>{show(c.triad);c.unodes[0].classList.add("act");c.unodes[1].classList.add("act");c.vnodes[1].classList.add("act")}}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. GRAPH PROJECTIONS
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Graph Projections & 2-Hop Paths",build(s){
-  const c={};title(s,"03 · Bipartite Projections","Folding the Graph: S = R &bull; R<sup>T</sup> and S = R<sup>T</sup> &bull; R");
-  c.svg=wires(s);
-
-  c.itemCard=put(s,"card fx l",`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span class="badge accent">Item-Item Projection</span>
-      <span class="mono" style="font-size:12px;color:var(--accent)">S<sub>item</sub> = R<sup>T</sup> &bull; R</span>
+// 4 bipartite
+const BIP4={...BIP,edges:BIP.edges.map(([a,b])=>[a,b,{riya:1,arjun:2,sara:3,dev:3}[a]])};
+S.push({name:"Netflix as a graph",kicker:"Modelling",title:"Netflix as a bipartite graph",body:`
+  <div class="two">
+    <div>${graphSVG(BIP4)}</div>
+    <div class="col">
+      <div class="card r" data-s="0"><span class="tag">Definition</span><p>A <b>bipartite graph</b> has two groups of vertices. Edges only go <b>between</b> the groups, never inside one.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">1</div><div><b>Viewers</b> (circles) and <b>shows</b> (boxes) are the two groups.</div></div>
+      <div class="steprow r" data-s="2"><div class="n">2</div><div>An edge means <b>“watched and enjoyed”</b>. A viewer is never joined to another viewer.</div></div>
+      <div class="steprow r" data-s="3"><div class="n">3</div><div>Real systems also give edges a <b>weight</b>: finishing a series counts more than quitting after 5 minutes.</div></div>
     </div>
-    <div style="font-size:14px;color:var(--muted);margin-bottom:12px">Two titles are connected if they share common viewers. Edge weight = co-viewing count.</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="chip red" style="display:flex;justify-content:space-between"><span>Dark &harr; Stranger Things</span><b>4.8M Co-views</b></div>
-      <div class="chip accent" style="display:flex;justify-content:space-between"><span>Dark &harr; Black Mirror</span><b>3.9M Co-views</b></div>
-      <div class="chip green" style="display:flex;justify-content:space-between"><span>Squid Game &harr; Alice in Borderland</span><b>6.2M Co-views</b></div>
-      <div class="chip amber" style="display:flex;justify-content:space-between"><span>The Crown &harr; Bridgerton</span><b>5.1M Co-views</b></div>
-    </div>
-  `,48,100,370,300);
+  </div>`,
+  steps:[
+   {note:"Now we build the Netflix graph. It's a special kind called a bipartite graph: two groups, and edges only cross between them."},
+   {note:"Group one is viewers, group two is shows. Riya watched Stranger Things and Dark."},
+   {note:"Arjun watched Stranger Things, Dark and Black Mirror. Notice there's no line between Riya and Arjun directly."},
+   {note:"Sara watched Dark, Black Mirror and Squid Game, and Dev only watched The Crown. In real systems each edge also has a weight, so a finished series counts more than a show you abandoned."}
+  ]});
 
-  c.userCard=put(s,"card fx r",`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span class="badge red">User-User Projection</span>
-      <span class="mono" style="font-size:12px;color:var(--red)">S<sub>user</sub> = R &bull; R<sup>T</sup></span>
+// 5 neighbours / 2-hop
+S.push({name:"Because you watched…",kicker:"Key idea",title:"Following paths: “Because you watched Dark”",body:`
+  <div class="two">
+    <div>${graphSVG(BIP)}</div>
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n acc">1</div><div><b>1 step</b> from Riya: the shows she has already watched.</div></div>
+      <div class="steprow r" data-s="1"><div class="n blu">2</div><div><b>2 steps</b>: other viewers who watched the same show: <b>Arjun</b> and <b>Sara</b>. They share her taste.</div></div>
+      <div class="steprow r" data-s="2"><div class="n acc">3</div><div><b>3 steps</b>: shows <i>they</i> watched that Riya hasn't: <b>Black Mirror</b> and <b>Squid Game</b>.</div></div>
+      <div class="callout green r" data-s="3">A path of length 3 from a viewer to a new show is one <b>reason</b> to recommend it. This is exactly the row <b>“Because you watched Dark”</b>.</div>
     </div>
-    <div style="font-size:14px;color:var(--muted);margin-bottom:12px">Two subscribers are connected if their watch histories overlap. Edge weight = Jaccard or Cosine similarity.</div>
-    <div style="display:flex;flex-direction:column;gap:8px">
-      <div class="chip red" style="display:flex;justify-content:space-between"><span>Alice &harr; Bob (Mind-Benders)</span><b>0.91 Cosine</b></div>
-      <div class="chip amber" style="display:flex;justify-content:space-between"><span>Alice &harr; Charlie</span><b>0.12 Cosine</b></div>
-      <div class="chip dim" style="display:flex;justify-content:space-between"><span>Alice &harr; Diana</span><b>0.02 (Orthogonal)</b></div>
-    </div>
-  `,862,100,370,300);
+  </div>`,
+  steps:[
+   {note:"Let's find recommendations for Riya. One step away are the shows she has already seen.",run:el=>hl(el,["riya","riya-st","riya-dark","st","dark"],"hl")},
+   {note:"Two steps away are other people who watched the same shows: Arjun and Sara. They have similar taste.",run:el=>hl(el,["arjun","sara","arjun-st","arjun-dark","sara-dark"],"hl2")},
+   {note:"Three steps away are the shows those people liked that Riya hasn't seen yet: Black Mirror and Squid Game. Dev and The Crown are not connected to Riya at all.",run:el=>{hl(el,["arjun-bm","sara-bm","sara-sg","bm","sg"],"hl");fade(el,["dev","crown","dev-crown"])}},
+   {note:"So a path of length three is a reason to recommend. And it explains itself, which is why Netflix can label a row 'Because you watched Dark'."}
+  ]});
 
-  // Center: The 2-hop path walk
-  c.walkCard=put(s,"card fx p",`
-    <h4>The 2-Hop Path Walk: Explaining 'Because You Watched'</h4>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:24px 0 16px;position:relative">
-      <div class="gnode" id="w_u1" style="width:130px;flex-direction:column;text-align:center;padding:12px 6px">
-        <div class="avatar" style="background:#e5091422;color:#e50914;margin:0 auto 6px">U1</div>
-        <div class="name">Alice</div>
+// 6 counting paths
+S.push({name:"Counting paths",kicker:"Scoring",title:"More paths = stronger recommendation",body:`
+  <div class="two" style="grid-template-columns:560px 1fr;align-items:start">
+    <div class="col">
+      <div class="card r" data-s="0"><div class="pt-h"><b>Black Mirror</b><span class="badge">3 paths</span></div>
+        <div class="mono">Riya → Stranger Things → Arjun → Black Mirror<br>Riya → Dark → Arjun → Black Mirror<br>Riya → Dark → Sara → Black Mirror</div></div>
+      <div class="card r" data-s="1"><div class="pt-h"><b>Squid Game</b><span class="badge blue">1 path</span></div>
+        <div class="mono">Riya → Dark → Sara → Squid Game</div></div>
+      <div class="card r" data-s="2"><div class="pt-h"><b>The Crown</b><span class="badge grey">0 paths</span></div>
+        <div class="small">Dev's part of the graph never connects to Riya's.</div></div>
+    </div>
+    <div class="col" style="gap:18px">
+      <div class="card tint r" data-s="3"><span class="tag">Score for Riya = number of length-3 paths</span>
+        <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">3</div></div>
+        <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="33"></div></div><div class="val">1</div></div>
+        <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">0</div></div>
       </div>
-      <div style="font-size:22px;color:var(--dim)">&rarr;</div>
-      <div class="mnode" id="w_m2" style="width:140px;flex-direction:column;text-align:center;padding:12px 6px;--c:#6366f1">
-        <div style="font-size:20px;margin-bottom:4px">⏳</div>
-        <div class="title" style="font-size:13px">Dark</div>
+      <div class="callout blue r" data-s="4"><b>Matrix view.</b> Let <b>B</b> be the viewer × show table (1 = watched). Riya's row of <b>B·Bᵀ·B</b> counts exactly these paths.</div>
+    </div>
+  </div>`,
+  steps:[
+   {note:"Now we turn paths into a score. Black Mirror can be reached from Riya by three different paths."},
+   {note:"Squid Game can be reached by only one path, through Sara."},
+   {note:"The Crown has zero paths, so it gets no score at all."},
+   {note:"So the ranking is simply: count the paths. Black Mirror first, Squid Game second.",run:(el)=>bars(el)},
+   {note:"For the maths students: if B is the table of who watched what, then multiplying B by B-transpose by B counts these paths for every viewer at once."}
+  ]});
+
+// 7 random walk
+S.push({name:"Random walks",kicker:"Scaling up",title:"Random walks: let a visitor explore the graph",body:`
+  <div class="two">
+    <div>${graphSVG(BIP,{token:true})}</div>
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>Start a “visitor” at <b>Riya</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div>Each step, follow a <b>random edge</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div>With 15% chance, <b>jump back to Riya</b> so we stay near her taste.</div></div>
+      <div class="card tint r" data-s="1"><span class="tag">Visits per 1,000 steps (100,000 simulated)</span>
+        <div class="brow"><div class="lab">Black Mirror</div><div class="track"><div class="bar" data-w="100"></div></div><div class="val">${WALK.bm}</div></div>
+        <div class="brow"><div class="lab">Squid Game</div><div class="track"><div class="bar b2" data-w="${Math.round(WALK.sg/WALK.bm*100)}"></div></div><div class="val">${WALK.sg}</div></div>
+        <div class="brow"><div class="lab">The Crown</div><div class="track"><div class="bar" data-w="0"></div></div><div class="val">${WALK.crown}</div></div>
       </div>
-      <div style="font-size:22px;color:var(--dim)">&larr;</div>
-      <div class="gnode" id="w_u2" style="width:130px;flex-direction:column;text-align:center;padding:12px 6px">
-        <div class="avatar" style="background:#6366f122;color:#6366f1;margin:0 auto 6px">U2</div>
-        <div class="name">Bob</div>
-      </div>
-      <div style="font-size:22px;color:var(--dim)">&rarr;</div>
-      <div class="mnode" id="w_m3" style="width:140px;flex-direction:column;text-align:center;padding:12px 6px;--c:#a855f7">
-        <div style="font-size:20px;margin-bottom:4px">🪞</div>
-        <div class="title" style="font-size:13px">Black Mirror</div>
-      </div>
+      <div class="callout gold r" data-s="2">Same ranking as counting paths, without multiplying huge matrices. This is <b>Personalized PageRank</b> [3]; Pinterest runs it on billions of items [2].</div>
     </div>
-    <div class="formula-box" style="font-size:13.5px;padding:12px 16px">
-      Recommendation Score(Alice, Black Mirror) = &sum;<sub>u &in; Viewers(Dark)</sub> w(Alice, Dark) &times; w(u, Dark) &times; w(u, Black Mirror)
+  </div>`,
+  steps:[
+   {note:"Counting every path gets expensive with millions of users. So instead, we send a visitor walking randomly through the graph, starting at Riya.",run:el=>{hl(el,["riya"]);animateToken(el)}},
+   {note:"Every step it follows a random edge, and sometimes jumps back to Riya. If we count where it lands, Black Mirror is visited most, Squid Game less, and The Crown never.",run:el=>bars(el)},
+   {note:"Same answer as counting paths, but much cheaper. This idea is Personalized PageRank, a version of Google's original PageRank, and Pinterest uses it to recommend from billions of items."}
+  ]});
+
+// 8 cold start
+const COLD={vb:"0 0 560 400",labels:[[260,346,"0 viewers · no edges","note r on"]],
+  nodes:[{id:"riya",x:80,y:200,t:"Riya",k:"v"},{id:"dark",x:260,y:110,t:"Dark",k:"s",w:130},
+    {id:"n1899",x:260,y:300,t:"1899 (new)",k:"s",w:150},
+    {id:"cre",x:460,y:150,t:"Same creators",k:"a",w:170,s:1},{id:"mys",x:460,y:270,t:"Genre: Mystery",k:"a",w:170,s:1}],
+  edges:[["riya","dark"],["dark","cre",1,"dash"],["n1899","cre",1,"dash"],["dark","mys",1,"dash"],["n1899","mys",1,"dash"]]};
+S.push({name:"Cold start",kicker:"A hard case",title:"A brand-new show has no viewers",body:`
+  <div class="two">
+    <div>${graphSVG(COLD)}</div>
+    <div class="col">
+      <div class="card r" data-s="0"><span class="tag">The cold-start problem</span><p><b>1899</b> launches tonight. Nobody has watched it, so it has <b>no edges</b>. No path reaches it, so it is never recommended.</p></div>
+      <div class="steprow r" data-s="1"><div class="n">+</div><div>Fix: add new kinds of vertices: <b>creators, genres, actors</b>. Shows connect through what they have in common.</div></div>
+      <div class="callout green r" data-s="2">Dark and 1899 share the same creators, so the path <b>Riya → Dark → creators → 1899</b> exists on day one.</div>
     </div>
-  `,440,100,400,300);
+  </div>`,
+  steps:[
+   {note:"Here's a hard case. 1899 is a brand-new show. With zero viewers it has zero edges, so no path can reach it."},
+   {note:"The fix is to add other kinds of vertices: who made the show, its genre, its actors. Now shows connect to each other through what they share.",run:el=>{const n=el.querySelector("text.note");n&&n.classList.remove("on")}},
+   {note:"Dark and 1899 were made by the same creators. So there's a path from Riya to 1899 even before anyone has watched it.",run:el=>hl(el,["riya","riya-dark","dark","dark-cre","cre","n1899-cre","n1899"])}
+  ]});
 
-  c.explain=put(s,"card fx glow-amber",`
-    <h4>Explainability & Provenance</h4>
-    <div style="font-size:15px;line-height:1.6;color:var(--text)">
-      When Netflix shows a row titled <b>"Because you watched Dark"</b>, they are literally tracing the 2-hop bipartite walk:
-      <span class="mono" style="color:var(--accent)">Alice &rarr; Dark &rarr; Other Viewers &rarr; Black Mirror</span>.<br>
-      Graph walks give explainability for free. Deep black-box neural networks cannot do this without complex post-hoc explainers like SHAP.
+// 9 pipeline
+S.push({name:"The full pipeline",kicker:"Putting it together",title:"From a click to your home screen",body:`
+  <div class="col" style="gap:30px;height:100%">
+    <div class="row4" style="height:170px">
+      <div class="pbox r" data-s="0"><div class="k">STEP 1</div><h3>Collect</h3><p>Record what each person watches, finishes and rates.</p></div>
+      <div class="pbox r" data-s="1"><div class="k">STEP 2</div><h3>Build the graph</h3><p>Viewers, shows, creators and genres become vertices; activity becomes edges.</p></div>
+      <div class="pbox r" data-s="2"><div class="k">STEP 3</div><h3>Score</h3><p>Count paths or run random walks from the viewer.</p></div>
+      <div class="pbox r" data-s="3"><div class="k">STEP 4</div><h3>Rank &amp; show</h3><p>Top-scoring shows fill the rows on the home screen.</p></div>
     </div>
-  `,180,440,920,130);
+    <div class="callout blue r" data-s="4">The graph keeps changing: when you finish an episode, new edges appear and your recommendations update.</div>
+    <div class="small r" data-s="4">Note: Netflix's production system combines many models, including deep learning [1]. The graph view is the core intuition behind them.</div>
+  </div>`,
+  steps:[
+   {note:"Let's put it all together. First, Netflix collects what you watch, finish and rate."},
+   {note:"Second, that activity is turned into a graph."},
+   {note:"Third, the system scores shows by counting paths or by random walks."},
+   {note:"Fourth, the highest-scoring shows fill the rows on your screen."},
+   {note:"And this loop never stops: every episode you finish adds edges. To be fair, real Netflix mixes many models, but this graph picture is the core intuition."}
+  ]});
 
-  return c},steps:[
-  {say:"A bipartite graph can be mathematically folded in two ways: into an Item-Item projection, or into a User-User projection.",run:c=>{show(c.itemCard);show(c.userCard)}},
-  {say:"Item-item projection multiplies the transposed interaction matrix by itself: S = R-transpose times R. This tells Netflix which titles are co-watched together by millions of viewers.",run:c=>c.itemCard.classList.add("act")},
-  {say:"User-user projection gives user similarity. But in production, Netflix computes these connections dynamically using multi-hop graph walks.",run:c=>show(c.walkCard)},
-  {say:"Look at the walk: Alice watched Dark. Bob also watched Dark, and Bob loved Black Mirror. The 2-hop path directly connects Alice to Black Mirror.",run:c=>{show(c.explain);c.walkCard.classList.add("act")}}
-]});
+// 10 limitations
+S.push({name:"Limitations",kicker:"Critical view",title:"Where this approach struggles",body:`
+  <div class="row3" style="height:100%;align-content:start">
+    <div class="card r" data-s="0"><span class="tag">Popularity bias</span><h3>Big shows win too easily</h3><p>Popular shows have many edges, so every path seems to lead to them.</p><p class="small" style="margin-top:12px"><b>Fix:</b> divide the score by the show's degree.</p></div>
+    <div class="card r" data-s="1"><span class="tag">Filter bubble</span><h3>Always more of the same</h3><p>Short paths keep you near what you already like.</p><p class="small" style="margin-top:12px"><b>Fix:</b> mix in a few exploratory picks.</p></div>
+    <div class="card r" data-s="2"><span class="tag">Privacy</span><h3>Your history is personal</h3><p>The graph reveals tastes people may not want to share.</p><p class="small" style="margin-top:12px"><b>Fix:</b> anonymise data and limit who can query it.</p></div>
+  </div>`,
+  steps:[
+   {note:"No method is perfect. First, popularity bias: hugely popular shows have so many edges that every path leads to them. One fix is to divide by degree."},
+   {note:"Second, the filter bubble: following short paths keeps showing you more of the same, so systems add some exploration."},
+   {note:"Third, privacy: a watch-history graph says a lot about a person, so it must be protected."}
+  ]});
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. RANDOM WALKS & PERSONALIZED PAGERANK
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Personalized PageRank & Random Walks",build(s){
-  const c={};title(s,"04 · Graph Traversal","Personalized PageRank (PPR) & Random Walks with Restart (RWR)");
-  
-  c.math=put(s,"formula-box fx",`
-    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">STATIONARY DISTRIBUTION EQUATION</div>
-    &pi;<sub>u</sub> = (1 - &alpha;) P<sup>T</sup> &pi;<sub>u</sub> + &alpha; e<sub>u</sub>
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">
-      &bull; &alpha; = 0.15 (Teleport probability back to seed subscriber Alice)<br>
-      &bull; P<sub>ij</sub> = Transition probability proportional to edge weight w<sub>ij</sub> / &sum; w<br>
-      &bull; e<sub>u</sub> = Standard basis vector with 1 at Alice's index, 0 elsewhere
+// 11 summary
+S.push({name:"Summary",kicker:"Conclusion",title:"Key takeaways",body:`
+  <div class="two" style="grid-template-columns:1fr 380px;align-items:start">
+    <div class="col">
+      <div class="steprow r" data-s="0"><div class="n">1</div><div>Viewers and shows form a <b>bipartite graph</b>.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">2</div><div>A <b>path</b> from you to a show is a reason to recommend it.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">3</div><div><b>More paths</b> means a stronger recommendation; random walks estimate this cheaply.</div></div>
+      <div class="steprow r" data-s="0"><div class="n">4</div><div>Extra vertices (creators, genres) solve the <b>new-show</b> problem.</div></div>
+      <div class="small r" data-s="1" style="margin-top:14px;font-size:13.5px;line-height:1.6">
+        [1] C. A. Gomez-Uribe, N. Hunt. <i>The Netflix Recommender System.</i> ACM TMIS, 2015.<br>
+        [2] C. Eksombatchai et al. <i>Pixie: Recommending 3+ Billion Items to 200+ Million Users in Real-Time.</i> WWW 2018.<br>
+        [3] L. Page, S. Brin et al. <i>The PageRank Citation Ranking.</i> Stanford, 1999.</div>
     </div>
-  `,48,100,560,165);
-
-  c.walkBox=put(s,"card fx alt",`
-    <h4>Live Random Walk Simulation (10,000 Particles)</h4>
-    <div style="font-size:13.5px;color:var(--muted);line-height:1.5">
-      We inject 10,000 random walkers starting at Alice (<span style="color:#e50914;font-weight:700">U1</span>).<br>
-      At each step, a walker either teleports back to Alice with probability &alpha; = 15%, or steps to a neighboring show/user.
+    <div class="card tint r" data-s="1" style="text-align:center;padding:48px 24px">
+      <div style="font:600 40px var(--serif);color:var(--navy)">Thank you</div>
+      <div style="font-size:21px;color:var(--muted);margin-top:10px">Questions?</div>
     </div>
-    <div style="display:flex;gap:12px;margin-top:14px">
-      <div class="chip red">Step 1: Alice &rarr; {Stranger Things, Dark}</div>
-      <div class="chip accent">Step 2: Dark &rarr; {Bob, David}</div>
-      <div class="chip violet">Step 3: Bob &rarr; {Black Mirror, Mindhunter}</div>
-    </div>
-  `,48,285,560,160);
+  </div>`,
+  steps:[
+   {note:"To summarise: Netflix's data is a bipartite graph. Paths are reasons. More paths mean stronger recommendations, and random walks estimate that cheaply. Extra vertex types solve the new-show problem."},
+   {note:"Thank you. I'm happy to take questions."}
+  ]});
 
-  c.barBox=put(s,"card fx r",`
-    <h4>Stationary Visitation Probability &pi;<sub>Alice</sub> (Recommendation Slate)</h4>
-    <div id="ppr_bars" style="margin-top:12px">
-      <div class="brow top"><div class="lab">Black Mirror (Anthology)</div><div class="bar-wrap"><div class="bar" style="width:84%"></div></div><div class="val">0.342</div></div>
-      <div class="brow top"><div class="lab">Mindhunter (Crime Noir)</div><div class="bar-wrap"><div class="bar" style="width:68%"></div></div><div class="val">0.281</div></div>
-      <div class="brow"><div class="lab">Severance (Sci-Fi Thriller)</div><div class="bar-wrap"><div class="bar" style="width:48%"></div></div><div class="val">0.194</div></div>
-      <div class="brow"><div class="lab">Squid Game (Survival)</div><div class="bar-wrap"><div class="bar" style="width:34%"></div></div><div class="val">0.149</div></div>
-      <div class="brow" style="opacity:.4"><div class="lab">The Crown (Royalty)</div><div class="bar-wrap"><div class="bar" style="width:3%"></div></div><div class="val">0.012</div></div>
-      <div class="brow" style="opacity:.2"><div class="lab">Bridgerton (Romance)</div><div class="bar-wrap"><div class="bar" style="width:1%"></div></div><div class="val">0.004</div></div>
-    </div>
-  `,640,100,592,345);
-
-  c.summary=put(s,"card fx glow-teal",`
-    <h4>Why Random Walk with Restart Beats Matrix Search</h4>
-    <div style="font-size:14.5px;line-height:1.55;color:var(--text)">
-      1. <b>Extreme Efficiency:</b> Instead of computing matrix inverses or dense dot products over 15,000 items, PPR walks only the local neighborhood.<br>
-      2. <b>Self-Pruning:</b> Irrelevant genres like <i>The Crown</i> naturally receive zero particle visits (&pi; &approx; 0.012) and drop off automatically.<br>
-      3. <b>Diversity & Serendipity:</b> Particles occasionally jump across subtle thematic edges, discovering unexpected gems like <i>Severance</i>.
-    </div>
-  `,48,465,1184,145);
-
-  return c},steps:[
-  {say:"How does Netflix explore the graph without exploding compute? The answer is Personalized PageRank and Random Walks with Restart.",run:c=>show(c.math)},
-  {say:"Imagine dropping 10,000 virtual particles on Alice. At each turn, particles hop to shows Alice watched, then to other subscribers who loved those shows, with a 15% chance to teleport back to Alice.",run:c=>show(c.walkBox)},
-  {say:"After just 20 to 30 iterations, the particle visits converge to a stationary probability distribution. Shows with the highest visitation frequency become Alice's top recommendations.",run:c=>show(c.barBox)},
-  {say:"Look at the bar chart: Black Mirror and Mindhunter dominate. Meanwhile, The Crown and Bridgerton receive virtually zero visits. The graph topology filters out noise naturally.",run:c=>show(c.summary)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. HETEROGENEOUS INFORMATION NETWORKS (COLD START)
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Heterogeneous Graphs & Cold Start",build(s){
-  const c={};title(s,"05 · Heterogeneous Networks","Typed Vertices & Metapaths for the Zero-View Cold Start Problem");
-  c.svg=wires(s);
-
-  c.coldCard=put(s,"card fx l",`
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <span class="badge red">The Cold Start Catastrophe</span>
-      <span class="mono" style="color:var(--red);font-size:12px">Degree d(v) = 0</span>
-    </div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.55">
-      A brand-new original series, <b>"1899"</b>, launches on Netflix at 12:00 AM.<br>
-      It has <b>0 subscriber views</b> and <b>0 ratings</b>. In a pure User-Item bipartite graph, it is an isolated vertex.
-      Collaborative filtering and random walks will <b>never</b> reach it.
-    </div>
-    <div class="mnode" style="margin-top:14px;border-color:var(--red);background:var(--red-soft);--c:#e50914">
-      <div class="post">🚢</div>
-      <div class="info"><div class="title">1899 (New Release)</div><div class="tags" style="color:#ff858d">0 Views &bull; 0 Ratings &bull; Isolated Node</div></div>
-    </div>
-  `,48,100,420,290);
-
-  c.hinCard=put(s,"card fx p",`
-    <h4>The Heterogeneous Entity Graph (HIN)</h4>
-    <div style="font-size:13.5px;color:var(--muted);margin-bottom:12px">
-      Netflix expands the graph to include typed non-user vertices: Directors, Actors, Genres, and Soundtracks.
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div class="chip violet">🎬 Director: Baran bo Odar</div>
-      <div class="chip cyan">🎭 Actor: Andreas Pietschmann</div>
-      <div class="chip accent">🏷️ Genre: Mind-Bender Mystery</div>
-      <div class="chip amber">🌍 Origin: German Production</div>
-    </div>
-    <div class="formula-box" style="margin-top:16px;font-size:13px;padding:12px 14px">
-      <b>Metapath &Rho;<sub>Director</sub>:</b><br>
-      User &rarr; [Watched] &rarr; Dark &rarr; [DirectedBy] &rarr; Baran bo Odar &larr; [DirectedBy] &larr; 1899
-    </div>
-  `,490,100,742,290);
-
-  c.pathsim=put(s,"card fx",`
-    <h4>PathSim: Metapath-Guided Similarity</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
-      <div class="formula-box" style="font-size:13px">
-        PathSim(x, y) = <br>
-        2 &times; |{p &isin; &Rho; : x &rightsquigarrow; y}| / (|{p &isin; &Rho; : x &rightsquigarrow; x}| + |{p &isin; &Rho; : y &rightsquigarrow; y}|)
-      </div>
-      <div style="font-size:14px;line-height:1.6;color:var(--text)">
-        Even with <b>zero watch history</b>, the metapath connecting Alice &rarr; Dark &rarr; Director &rarr; 1899 produces a PathSim score of <b>0.94</b>.<br>
-        1899 immediately jumps to the #1 billboard on Alice's homepage at launch!
-      </div>
-    </div>
-  `,48,415,1184,180);
-
-  return c},steps:[
-  {say:"What happens when Netflix releases a brand-new original series? It has zero views and zero ratings. In a traditional bipartite graph, it's an isolated island.",run:c=>show(c.coldCard)},
-  {say:"To fix this, Netflix constructs a Heterogeneous Information Network. They connect titles to Directors, Actors, Genres, and Language tags.",run:c=>show(c.hinCard)},
-  {say:"Now we can define 'Metapaths'. Notice the path: Alice watched Dark, which was directed by Baran bo Odar. Baran bo Odar also directed 1899.",run:c=>c.hinCard.classList.add("act")},
-  {say:"Using PathSim, Netflix calculates that Alice has a 94% affinity for 1899 before a single subscriber has streamed it. Cold start is solved.",run:c=>show(c.pathsim)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. GRAPH NEURAL NETWORKS & MESSAGE PASSING
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Graph Neural Networks (PinSage / LightGCN)",build(s){
-  const c={};title(s,"06 · Deep Graph Learning","Multi-Hop Convolution & Neighborhood Message Passing");
-  c.svg=wires(s);
-
-  c.layer0=put(s,"card fx l",`
-    <h4>Layer 0: Raw Node Features x<sub>v</sub></h4>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Static entity features before graph propagation:</div>
-    <div class="chip red">Genre Vector [0.8, 0.1, 0.9]</div>
-    <div class="chip accent">Release Year (2022)</div>
-    <div class="chip green">Maturity Rating (TV-MA)</div>
-    <div class="chip amber">Language (de-DE)</div>
-  `,48,100,320,200);
-
-  c.layer1=put(s,"card fx p",`
-    <h4>Layer 1: 1-Hop Message Passing</h4>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Aggregate direct subscriber embeddings:</div>
-    <div class="formula-box" style="font-size:12px;padding:10px">
-      h<sub>v</sub><sup>(1)</sup> = AGG({h<sub>u</sub><sup>(0)</sup> : u &in; N(v)})
-    </div>
-    <div style="font-size:13px;color:var(--text);margin-top:10px">
-      Aggregates viewing patterns of all users who streamed <i>Dark</i>.
-    </div>
-  `,400,100,440,200);
-
-  c.layer2=put(s,"card fx r",`
-    <h4>Layer 2: 2-Hop Network Context</h4>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Captures global structural taste clusters:</div>
-    <div class="formula-box" style="font-size:12px;padding:10px">
-      z<sub>v</sub> = W &bull; [ h<sub>v</sub><sup>(0)</sup> || h<sub>v</sub><sup>(1)</sup> || h<sub>v</sub><sup>(2)</sup> ]
-    </div>
-    <div style="font-size:13px;color:var(--text);margin-top:10px">
-      Produces final 64-dimensional latent embedding vector in continuous metric space.
-    </div>
-  `,872,100,360,200);
-
-  c.box=put(s,"card fx alt",`
-    <h4>The Non-Linear Edge: Why GNNs Outperform Classical Matrix Factorization</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-top:12px">
-      <div>
-        <div style="font-weight:700;color:var(--red);font-size:14px;margin-bottom:4px">1. Non-Linear Feature Fusion</div>
-        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Combines graph connectivity with rich textual, visual, and behavioral metadata simultaneously.</p>
-      </div>
-      <div>
-        <div style="font-weight:700;color:var(--accent);font-size:14px;margin-bottom:4px">2. Inductive Generalization</div>
-        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Can immediately generate embeddings for new items and users by simply passing messages from neighbors.</p>
-      </div>
-      <div>
-        <div style="font-weight:700;color:var(--green);font-size:14px;margin-bottom:4px">3. Sub-Millisecond MIPS</div>
-        <p style="font-size:13px;color:var(--muted);margin:0;line-height:1.5">Once embeddings z<sub>u</sub> and z<sub>v</sub> are computed, retrieval is a fast inner product: argmax (z<sub>u</sub> &bull; z<sub>v</sub>).</p>
-      </div>
-    </div>
-  `,48,330,1184,180);
-
-  return c},steps:[
-  {say:"Modern production systems at Netflix, Pinterest, and Uber use Graph Neural Networks like PinSage and LightGCN.",run:c=>show(c.layer0)},
-  {say:"In Layer 1, every title aggregates feature messages from all subscribers who watched it.",run:c=>show(c.layer1)},
-  {say:"In Layer 2, it aggregates messages from their extended watch history. Two hops of message passing captures over 90% of graph structural information.",run:c=>show(c.layer2)},
-  {say:"The final output is a 64-dimensional embedding vector. Retrieval across 15,000 titles is reduced to a lightning-fast dot product.",run:c=>show(c.box)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 7. SPECTRAL GRAPH THEORY & LAPLACIAN
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Matrix Factorization as Graph Laplacian Smoothing",build(s){
-  const c={};title(s,"07 · Spectral Graph Theory","Why Matrix Factorization is Laplacian Dirichlet Smoothing");
-
-  c.lap=put(s,"formula-box fx",`
-    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">THE UNNORMALIZED GRAPH LAPLACIAN MATRIX</div>
-    L = D - A
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">
-      &bull; D = Diagonal degree matrix (D<sub>ii</sub> = &sum;<sub>j</sub> A<sub>ij</sub>)<br>
-      &bull; A = Symmetric adjacency matrix of the bipartite graph
-    </div>
-  `,48,100,560,140);
-
-  c.dirichlet=put(s,"card fx r",`
-    <h4>The Dirichlet Energy on Graphs</h4>
-    <div class="formula-box" style="font-size:13px;margin-bottom:10px">
-      E(Z) = 1/2 &sum;<sub>(i,j) &in; E</sub> w<sub>ij</sub> ||z<sub>i</sub> - z<sub>j</sub>||<sup>2</sup> = Tr(Z<sup>T</sup> L Z)
-    </div>
-    <div style="font-size:13.5px;color:var(--text);line-height:1.6">
-      Minimizing Dirichlet energy forces connected nodes (Alice and Dark) to be mapped to virtually identical coordinates in embedding space Z.<br>
-      High energy = high-frequency graph noise. Low energy = smooth latent taste dimensions.
-    </div>
-  `,640,100,592,200);
-
-  c.unify=put(s,"card fx glow-amber",`
-    <h4>The Grand Theoretical Unification</h4>
-    <div style="font-size:15px;line-height:1.65;color:var(--text)">
-      When engineers perform classical <b>Singular Value Decomposition (SVD)</b> or <b>Matrix Factorization</b> (R &approx; P &bull; Q<sup>T</sup>), they are not just doing matrix math.<br>
-      <span class="t-amber" style="font-weight:700">They are computing the lowest-frequency eigenvectors of the Graph Laplacian.</span><br>
-      Collaborative filtering is literally low-pass Fourier filtering on graph signals!
-    </div>
-  `,48,325,1184,180);
-
-  return c},steps:[
-  {say:"Let's bridge classical machine learning and graph theory through the Graph Laplacian matrix: L = D minus A.",run:c=>show(c.lap)},
-  {say:"The Dirichlet Energy measures how much an embedding changes across graph edges. Minimizing it ensures that people who watch the same shows sit close together in vector space.",run:c=>show(c.dirichlet)},
-  {say:"This brings us to a beautiful mathematical truth: classical matrix factorization is simply finding the low-frequency harmonics of the Graph Laplacian.",run:c=>show(c.unify)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 8. COMMUNITY DETECTION & MICRO-GENRES
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Community Detection & 76,000 Micro-Genres",build(s){
-  const c={};title(s,"08 · Graph Clustering","Discovering Netflix Micro-Genres via Louvain Modularity Optimization");
-
-  c.math=put(s,"formula-box fx",`
-    <div style="font-size:12px;color:var(--dim);margin-bottom:4px">LOUVAIN GRAPH MODULARITY Q</div>
-    Q = 1/(2m) &sum;<sub>ij</sub> [ A<sub>ij</sub> - (k<sub>i</sub> k<sub>j</sub>)/(2m) ] &delta;(c<sub>i</sub>, c<sub>j</sub>)
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">
-      Compares actual internal edge density within cluster c against the expected density under a random configuration model.
-    </div>
-  `,48,100,1184,120);
-
-  const CLUSTERS=[
-    {name:"Cluster A: Psychological Mind-Benders",col:"var(--red)",items:["Dark", "Black Mirror", "Stranger Things", "Alice", "Bob"],desc:"Dense internal triangles. High completion rates on time-travel & dystopian themes."},
-    {name:"Cluster B: High-Tension Survival",col:"var(--green)",items:["Squid Game", "Alice in Borderland", "All of Us Are Dead", "Charlie"],desc:"Strong cross-border Asian thriller community. Extremely high binge-velocity."},
-    {name:"Cluster C: Prestige Historical Drama",col:"var(--amber)",items:["The Crown", "Bridgerton", "Downton Abbey", "Diana"],desc:"Separated by high modularity cut. Zero overlap with Cluster B survival thrillers."}
-  ];
-
-  c.cards=CLUSTERS.map((cl,i)=>put(s,"card fx",`
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <div style="width:12px;height:12px;border-radius:3px;background:${cl.col}"></div>
-      <h4 style="margin:0;color:#fff;font-size:13px">${cl.name}</h4>
-    </div>
-    <div style="margin:10px 0">
-      ${cl.items.map(x=>`<span class="chip" style="font-size:12px">${x}</span>`).join("")}
-    </div>
-    <div style="font-size:13px;color:var(--muted);line-height:1.5">${cl.desc}</div>
-  `,48+i*402,240,380,240));
-
-  c.quote=put(s,"card fx alt",`
-    <div style="font-size:15px;line-height:1.6;color:var(--text);text-align:center">
-      Netflix doesn't use static genres like "Action" or "Drama".<br>
-      They discover over <b>76,000 algorithmic micro-genres</b> by partitioning the global interaction graph using modularity optimization.
-    </div>
-  `,48,505,1184,100);
-
-  return c},steps:[
-  {say:"Why does Netflix have hyper-specific categories like 'Cerebral Scandinavian Mystery' instead of just 'Drama'? The answer is Graph Community Detection.",run:c=>show(c.math)},
-  {say:"Using the Louvain Modularity algorithm, Netflix partitions the 260 million subscriber graph into thousands of tightly knit taste communities.",run:c=>show(stag(c.cards,.15))},
-  {say:"These clusters form the horizontal rows you see on your screen every evening.",run:c=>show(c.quote)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 9. DYNAMIC EDGE STREAMING
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Real-Time Streaming Graph Updates",build(s){
-  const c={};title(s,"09 · Dynamic Graph Streams","Local Push Edge Ingestion in Under 15 Milliseconds");
-
-  c.event=put(s,"card fx l",`
-    <div class="badge red" style="margin-bottom:8px">Live Stream Event e<sub>t</sub></div>
-    <div class="mono" style="font-size:13.5px;color:var(--text);line-height:1.7">
-      timestamp: 23:42:10 UTC<br>
-      user_id: u1_Alice<br>
-      item_id: v4_SquidGame<br>
-      action: "SEASON_FINALE_COMPLETED"<br>
-      telemetry: {completion: 1.0, duration_h: 8.4}
-    </div>
-  `,48,100,420,200);
-
-  c.pipe=put(s,"card fx p",`
-    <h4>Incremental Local Push (Andersen-Chung-Lang)</h4>
-    <div style="font-size:13.5px;color:var(--muted);margin-bottom:10px">
-      Recomputing Personalized PageRank over the entire 260M graph would take hours. Instead, Netflix runs an <b>incremental local push</b>:
-    </div>
-    <div class="chip green">1. Push probability mass only to 1-hop & 2-hop neighbors</div>
-    <div class="chip accent">2. Stop when residual error r(v) &le; &epsilon; (10<sup>-5</sup>)</div>
-    <div class="chip violet">3. Update latency: <b>12 ms on Apache Flink</b></div>
-  `,490,100,742,200);
-
-  c.result=put(s,"card fx glow-teal",`
-    <h4>Instant UI Adaptation</h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
-      <div style="font-size:14px;line-height:1.6;color:var(--text)">
-        At 11:42 PM, Alice closes Squid Game.<br>
-        Her local graph neighborhood shifts dynamically. By 11:42:01 PM, her top row dynamically populates with <i>Alice in Borderland</i> and <i>All of Us Are Dead</i>.
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px">
-        <div class="chip green" style="justify-content:space-between"><span>Alice in Borderland</span><b style="color:#10b981">+340% Boost</b></div>
-        <div class="chip green" style="justify-content:space-between"><span>All of Us Are Dead</span><b style="color:#10b981">+285% Boost</b></div>
-      </div>
-    </div>
-  `,48,330,1184,170);
-
-  return c},steps:[
-  {say:"A graph is not a static museum piece. Every second, millions of streaming edge events arrive across Kafka.",run:c=>show(c.event)},
-  {say:"How do you update PageRank without crashing the servers? You run an incremental local push algorithm on Apache Flink.",run:c=>show(c.pipe)},
-  {say:"It updates only the local 2-hop subgraph around Alice in 12 milliseconds, refreshing her recommendations before she picks up the remote.",run:c=>show(c.result)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 10. PRODUCTION SYSTEM ARCHITECTURE
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Production Blueprint: Serving 260M Subgraphs",build(s){
-  const c={};title(s,"10 · Production Architecture","Serving 260M Graphs at Sub-15ms Latency");
-
-  const STAGES=[
-    {num:"01",title:"Edge Ingestion",sub:"Kafka (1.2M events/sec) &bull; Flink Stream Processor &bull; Live Edge Writer",c:"var(--red)"},
-    {num:"02",title:"Graph Store",sub:"In-Memory Partitioned Adjacency Store &bull; RocksDB + C++ GraphJet Engine",c:"var(--accent)"},
-    {num:"03",title:"Retrieval (MIPS)",sub:"HNSW Vector Graph Index &bull; PinSage Embeddings &bull; 15,000 &rarr; 200 Candidates",c:"var(--cyan)"},
-    {num:"04",title:"Ranker & Bandits",sub:"Deep Neural Ranking &bull; LinUCB Dynamic Artwork Personalization",c:"var(--green)"},
-    {num:"05",title:"Edge Gateway",sub:"Envoy gRPC Proxy &bull; Client TV App &bull; p99 Latency &le; 15 ms",c:"var(--amber)"}
-  ];
-
-  c.cols=STAGES.map((st,i)=>put(s,"card fx",`
-    <div style="font:800 14px 'JetBrains Mono',monospace;color:${st.c};margin-bottom:8px">${st.num}</div>
-    <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:6px">${st.title}</div>
-    <div style="font-size:12.5px;color:var(--muted);line-height:1.5">${st.sub}</div>
-  `,48+i*242,100,226,240));
-
-  c.metrics=[
-    {v:"260M",l:"Active Subgraphs"},
-    {v:"15k",l:"Catalog Vertices"},
-    {v:"< 15ms",l:"p99 Serving SLA"},
-    {v:"99.999%",l:"Availability"}
-  ].map((m,i)=>put(s,"card fx alt",`
-    <div class="mono" style="font-size:32px;font-weight:800;color:#fff">${m.v}</div>
-    <div style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">${m.l}</div>
-  `,48+i*300,370,282,100));
-
-  return c},steps:[
-  {say:"Here is the complete end-to-end production architecture that powers the Netflix graph.",run:c=>show(stag(c.cols,.1))},
-  {say:"Events enter via Kafka, update an in-memory graph engine, trigger vector retrieval via HNSW graph indexing, and pass through contextual bandits.",run:c=>show(stag(c.metrics,.1))}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 11. SUMMARY & GRAND LAWS
-// ─────────────────────────────────────────────────────────────────────────────
-SCENES.push({name:"Summary: The Laws of Graph Recommendation",build(s){
-  const c={};title(s,"11 · The Grand Summary","Six Foundational Laws of Graph Recommenders");
-
-  const LAWS=[
-    ["01","Bipartite Duality","Users and media items are dual reflections of the same topological space."],
-    ["02","Paths are Explanations","Two-hop walks replace unexplainable black-box matrices with auditable human provenance."],
-    ["03","Random Walks Beat Cross-Products","Personalized PageRank explores dense local taste clusters without O(N^2) memory blowups."],
-    ["04","Cold Start Demands Heterogeneity","Adding typed director, actor, and genre vertices bridges isolated zero-view titles."],
-    ["05","Message Passing Embeds Context","Graph Neural Networks convolve high-order structural neighborhoods into continuous 64D vectors."],
-    ["06","Real-Time is Incremental Push","Streaming edge events reweight local subgraphs in sub-15ms using localized residual pushes."]
-  ];
-
-  c.grid=LAWS.map(([n,h,p],i)=>put(s,"card fx",`
-    <div style="font:700 13px 'JetBrains Mono',monospace;color:var(--red);margin-bottom:4px">${n}</div>
-    <h3 style="margin:0 0 6px;font-size:16px;color:#fff">${h}</h3>
-    <p style="margin:0;font-size:13px;color:var(--muted);line-height:1.5">${p}</p>
-  `,48+(i%3)*402,100+Math.floor(i/3)*170,380,150));
-
-  c.end=put(s,"card fx glow-teal",`
-    <div style="font-size:18px;text-align:center;line-height:1.6;color:#fff">
-      <b>A Netflix recommendation is not a database query.</b><br>
-      It is finding the minimum-resistance path in an evolving, heterogeneous bipartite graph.
-    </div>
-  `,48,460,1184,110);
-
-  return c},steps:[
-  {say:"To summarize everything we've walked through: here are the six laws of graph recommendation systems.",run:c=>show(stag(c.grid,.08))},
-  {say:"A Netflix recommendation is not a database query. It is finding the minimum-resistance path in an evolving, heterogeneous bipartite graph. Thank you, and I am ready for questions.",run:c=>show(c.end)}
-]});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PLAYER CONTROLLER & ENGINE
-// ─────────────────────────────────────────────────────────────────────────────
-const FLAT=[];SCENES.forEach((sc,si)=>sc.steps.forEach((st,ki)=>FLAT.push({si,ki,st})));
-const sceneStart=SCENES.map((_,si)=>FLAT.findIndex(f=>f.si===si));
+// ============================================================ player
 const $=id=>document.getElementById(id);
-let cur=-1,applied=-1,curScene=-1,ctx=null;
+const stage=$("stage");
+const FLAT=[];S.forEach((s,si)=>s.steps.forEach((_,k)=>FLAT.push([si,k])));
+const start=S.map((_,si)=>FLAT.findIndex(f=>f[0]===si));
+let pos=-1,rendered=-1,el=null;
 
-const prog=$("prog"),segs=SCENES.map((sc,si)=>{
-  const g=mk("div","seg","<i></i>");g.style.setProperty("--n",sc.steps.length);g.title=`${si+1}. ${sc.name}`;
-  g.onclick=e=>{e.stopPropagation();goto(sceneStart[si])};prog.appendChild(g);return g;
-});
-
-function goto(i,still){
-  i=Math.max(0,Math.min(FLAT.length-1,i));
-  const {si,ki,st}=FLAT[i];
-  if(si!==curScene||ki!==applied+1){
-    GEN++;stage.innerHTML="";stage.classList.add("instant");INSTANT=true;
-    BUILD_IDX=si+1;ctx=SCENES[si].build(stage)||{};curScene=si;
-    for(let j=0;j<ki;j++)SCENES[si].steps[j].run(ctx);
-    if(ki>0)stage.querySelectorAll(".stitle").forEach(e=>e.classList.add("in"));
-    void stage.offsetWidth;INSTANT=false;
+function render(si){GEN++;const s=S[si];
+  stage.innerHTML=`<div class="slide${s.cover?" cover":""}">${s.cover?"":`<div class="head"><div class="kicker">${s.kicker}</div><h2 class="title">${s.title}</h2><div class="rule"></div></div>`}
+    <div class="body">${s.body}</div><div class="sfoot"><span>How Netflix Recommends · A Graph Theory View</span><span>${si+1} / ${S.length}</span></div></div>`;
+  el=stage.firstElementChild;rendered=si}
+function reveal(k){el.querySelectorAll("[data-s]").forEach(x=>x.classList.toggle("on",+x.dataset.s<=k))}
+function go(p,still){
+  p=Math.max(0,Math.min(FLAT.length-1,p));const [si,k]=FLAT[p];
+  if(!(si===rendered&&p===pos+1)){
+    stage.classList.add("instant");render(si);reveal(k-1);
+    for(let j=0;j<k;j++){const f=S[si].steps[j].run;f&&f(el,true)}
+    void stage.offsetWidth;if(!still)stage.classList.remove("instant");
   }
-  if(still){INSTANT=true;stage.classList.add("instant")}
-  else{stage.classList.remove("instant");void stage.offsetWidth}
-  stage.querySelectorAll(".stitle").forEach(e=>e.classList.add("in"));
-  st.run(ctx);INSTANT=false;applied=ki;cur=i;
-  if(still){void stage.offsetWidth;stage.classList.remove("instant")}
-  $("chap").innerHTML=`<b>${String(si+1).padStart(2,"0")}</b> &nbsp;${SCENES[si].name}`;
-  $("count").textContent=`${si+1} / ${SCENES.length}`;
-  $("notes").innerHTML=`<small>Notes &bull; Step ${ki+1} of ${SCENES[si].steps.length}</small>${st.say}`;
-  segs.forEach((g,j)=>g.firstChild.style.width=j<si?"100%":j>si?"0%":((ki+1)/SCENES[si].steps.length*100)+"%");
+  reveal(k);const f=S[si].steps[k].run;f&&f(el,!!still);pos=p;
+  $("count").textContent=`${si+1} / ${S.length}`;
+  $("notes").innerHTML=`<small>Speaker notes · ${si+1}.${k+1}</small>${S[si].steps[k].note}`;
+  segs.forEach((g,j)=>g.firstChild.style.width=j<si?"100%":j>si?"0%":((k+1)/S[si].steps.length*100)+"%");
   [...$("menu").children].forEach((b,j)=>b.classList.toggle("cur",j===si));
 }
+const segs=S.map((s,si)=>{const g=document.createElement("div");g.className="seg";g.innerHTML="<i></i>";g.style.setProperty("--n",s.steps.length);
+  g.title=`${si+1}. ${s.name}`;g.onclick=e=>{e.stopPropagation();go(start[si])};$("prog").appendChild(g);return g});
+S.forEach((s,si)=>{const b=document.createElement("button");b.innerHTML=`<span>${String(si+1).padStart(2,"0")}</span>${s.name}`;
+  b.onclick=()=>{go(start[si]);$("menu").hidden=true};$("menu").appendChild(b)});
 
-const next=()=>goto(cur+1),prev=()=>goto(cur-1);
-const sceneJump=d=>{const si=Math.max(0,Math.min(SCENES.length-1,(cur>=0?FLAT[cur].si:0)+d));goto(sceneStart[si])};
-
-// Controls setup
-const menu=$("menu"),help=$("help"),notes=$("notes");
-SCENES.forEach((sc,si)=>{
-  const b=mk("button","",`<span>${String(si+1).padStart(2,"0")}</span>${sc.name}`);
-  b.onclick=()=>{goto(sceneStart[si]);menu.hidden=true};
-  menu.appendChild(b);
-});
-
-$("bPrev").onclick=prev;$("bNext").onclick=next;
-$("bMenu").onclick=()=>{menu.hidden=!menu.hidden;help.hidden=true};
-$("bNotes").onclick=()=>{notes.hidden=!notes.hidden;$("bNotes").classList.toggle("on",!notes.hidden)};
-$("bHelp").onclick=()=>{help.hidden=!help.hidden;menu.hidden=true};
-$("viewport").onclick=()=>{if(!menu.hidden||!help.hidden){menu.hidden=help.hidden=true;return}next()};
-
-// Keyboard listener
-document.addEventListener("keydown",e=>{
-  if(e.metaKey||e.ctrlKey||e.altKey)return;
-  const k=e.key;
+const next=()=>go(pos+1),prev=()=>go(pos-1);
+function toggleFull(){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.()}
+document.addEventListener("fullscreenchange",()=>{document.body.classList.toggle("fs",!!document.fullscreenElement);$("bFull").classList.toggle("on",!!document.fullscreenElement);fit()});
+$("bPrev").onclick=prev;$("bNext").onclick=next;$("bFull").onclick=toggleFull;
+$("bMenu").onclick=()=>{$("menu").hidden=!$("menu").hidden;$("help").hidden=true};
+$("bHelp").onclick=()=>{$("help").hidden=!$("help").hidden;$("menu").hidden=true};
+$("bNotes").onclick=()=>{$("notes").hidden=!$("notes").hidden;$("bNotes").classList.toggle("on",!$("notes").hidden)};
+$("viewport").onclick=()=>{if(!$("menu").hidden||!$("help").hidden){$("menu").hidden=$("help").hidden=true;return}next()};
+document.addEventListener("keydown",e=>{if(e.metaKey||e.ctrlKey||e.altKey)return;const k=e.key;
   if([" ","ArrowRight","ArrowDown","PageDown","Enter"].includes(k)){e.preventDefault();next()}
   else if(["ArrowLeft","ArrowUp","PageUp","Backspace"].includes(k)){e.preventDefault();prev()}
-  else if(k==="]")sceneJump(1);
-  else if(k==="[")sceneJump(-1);
-  else if(k==="Home")goto(0);
-  else if(k==="End")goto(FLAT.length-1);
-  else if(k==="m"||k==="M"){menu.hidden=!menu.hidden;help.hidden=true}
-  else if(k==="n"||k==="N"){$("bNotes").click()}
-  else if(k==="h"||k==="H")document.body.classList.toggle("clean");
-  else if(k==="?")help.hidden=!help.hidden;
-  else if(k==="Escape"){menu.hidden=help.hidden=true}
-  else if(k==="f"||k==="F"){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen?.()}
-});
+  else if(k==="Home")go(0);else if(k==="End")go(FLAT.length-1);
+  else if(k==="f"||k==="F")toggleFull();
+  else if(k==="n"||k==="N")$("bNotes").click();
+  else if(k==="m"||k==="M")$("bMenu").click();
+  else if(k==="?")$("bHelp").click();
+  else if(k==="Escape"){$("menu").hidden=$("help").hidden=true}});
+let tx=null;$("viewport").addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
+$("viewport").addEventListener("touchend",e=>{if(tx==null)return;const dx=e.changedTouches[0].clientX-tx;tx=null;if(Math.abs(dx)>40){e.preventDefault();dx<0?next():prev()}});
 
-// Touch swipe support
-let tx=null;
-$("viewport").addEventListener("touchstart",e=>{tx=e.touches[0].clientX},{passive:true});
-$("viewport").addEventListener("touchend",e=>{
-  if(tx==null)return;
-  const dx=e.changedTouches[0].clientX-tx;tx=null;
-  if(Math.abs(dx)>40){e.preventDefault();dx<0?next():prev()}
-});
+function fit(){const v=$("viewport"),pad=document.body.classList.contains("fs")?0:24;
+  const s=Math.min((v.clientWidth-pad)/1280,(v.clientHeight-pad)/720);stage.style.transform=`translate(-50%,-50%) scale(${Math.max(.1,s)})`}
+addEventListener("resize",fit);
 
-// Fit 1280x720 stage
-function fit(){
-  const v=$("viewport"),s=Math.min((v.clientWidth-24)/1280,(v.clientHeight-16)/720);
-  stage.style.transform=`translate(-50%,-50%) scale(${Math.max(.1,s)})`;
-}
-addEventListener("resize",fit);fit();
-
-// Deep link
+// ?bare = slide only (for screenshots) ; #slide.step deep link ; ?check = layout self-test
+if(location.search.includes("bare"))document.body.classList.add("fs");
+fit();
 const m=location.hash.match(/^#(\d+)(?:\.(\d+))?/);
-if(m){
-  const si=Math.min(SCENES.length,+m[1])-1;
-  const ki=Math.min(SCENES[si].steps.length,+(m[2]||1))-1;
-  goto(sceneStart[si]+ki,location.search.includes("still"));
-}else{
-  goto(0);
+if(m){const si=Math.min(S.length,+m[1])-1,k=Math.min(S[si].steps.length,+(m[2]||S[si].steps.length))-1;go(start[si]+k,location.search.includes("still"))}else go(0);
+
+if(location.search.includes("check")){
+  const out=[];
+  S.forEach((s,si)=>{go(start[si]+s.steps.length-1,true);const b=el.querySelector(".body");
+    if(b.scrollHeight>b.clientHeight+1||b.scrollWidth>b.clientWidth+1)out.push(`slide ${si+1}: body overflow ${b.scrollWidth}x${b.scrollHeight} > ${b.clientWidth}x${b.clientHeight}`);
+    const br=b.getBoundingClientRect();
+    const items=[...el.querySelectorAll(".card,.callout,.steprow,.def,.lead,.pbox,.small,.brow,.stat,.who,h1,.sub")].filter(x=>x.offsetParent);
+    items.forEach(x=>{const r=x.getBoundingClientRect();if(r.bottom>br.bottom+1||r.right>br.right+1)out.push(`slide ${si+1}: clipped ${x.className}`)});
+    for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i],c=items[j];if(a.contains(c)||c.contains(a))continue;
+      const A=a.getBoundingClientRect(),C=c.getBoundingClientRect();const ox=Math.min(A.right,C.right)-Math.max(A.left,C.left),oy=Math.min(A.bottom,C.bottom)-Math.max(A.top,C.top);
+      if(ox>2&&oy>2)out.push(`slide ${si+1}: overlap "${a.className}" / "${c.className}"`)}});
+  const pre=document.createElement("pre");pre.id="check";pre.textContent=out.length?out.join("\n"):"LAYOUT OK";document.body.appendChild(pre);
 }
 </script>
 </body>
